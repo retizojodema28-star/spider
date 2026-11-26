@@ -122,7 +122,7 @@ func TestRenderingErrorDoesNotWritePartialSuccess(t *testing.T) {
 	}
 }
 
-func TestSampleLinksDoNotExposeRetiredHub(t *testing.T) {
+func TestSampleLinksDoNotLeakIntoFormalHub(t *testing.T) {
 	rt := testRuntime(t)
 	s := rt.Snapshot()
 	formal := publicSnapshot(s, s.Config)
@@ -137,7 +137,12 @@ func TestSampleLinksDoNotExposeRetiredHub(t *testing.T) {
 	req.Host = "preview.example.test:18443"
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
-	if w.Code != 404 {
-		t.Fatalf("retired live hub returned %d", w.Code)
+	if w.Code != 200 || !strings.Contains(w.Body.String(), `"@type":"CollectionPage"`) {
+		t.Fatalf("live hub returned %d without CollectionPage", w.Code)
+	}
+	for _, sample := range []string{"https://1soft.com/", "sample-app-one"} {
+		if strings.Contains(w.Body.String(), sample) {
+			t.Fatalf("preview-only fixture leaked into formal Hub: %s", sample)
+		}
 	}
 }

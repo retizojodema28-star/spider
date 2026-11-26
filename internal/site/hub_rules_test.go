@@ -78,9 +78,8 @@ func TestHubDSLAndDefaults(t *testing.T) {
 	}
 }
 
-// ExampleBuildHubPage covers the pure builder boundary. The public /link
-// endpoint is retired by the HTTP router, while the builder remains useful to
-// the administration and migration code that still owns the data model.
+// ExampleBuildHubPage covers the pure builder boundary used by the public
+// /link endpoint and the administration/migration code that owns its data.
 func ExampleBuildHubPage() {
 	r := httptest.NewRequest("GET", "http://example.test/link?lan=id", nil)
 	r.RequestURI = "/link?lan=id"

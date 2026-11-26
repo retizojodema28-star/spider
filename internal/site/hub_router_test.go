@@ -11,9 +11,8 @@ import (
 )
 
 // Exercise the parent's actual NoRoute dispatch, not just the pure builder.
-// The public Hub endpoint is retired, so all former Hub routes are 404 while
-// ordinary detail pages remain available and no public SQL reads occur.
-func TestPublicHubRoutesAreRemoved(t *testing.T) {
+// Hub pages render from the loaded snapshot and must not query SQL per request.
+func TestPublicHubRoutesAreServed(t *testing.T) {
 	rt := testRuntime(t)
 	router := NewRouterWithRuntime(rt, RouterOptions{AssetRoot: "../../assets"})
 	queries := 0
@@ -42,26 +41,27 @@ func TestPublicHubRoutesAreRemoved(t *testing.T) {
 		"/router.php/link/?lan=id",
 		"/index.php/link/?lan=id",
 		"/LINK/",
-		"/%6cink/",
-		"/link%2f20261125/0/",
-		"/link?path=/apps/example",
-		"/link/?__apk_home_fallback=1",
-		"/?path=%252Flink%252F",
 	} {
-		for _, method := range []string{"GET", "HEAD"} {
-			if got := fetch(method, target, "Mozilla/5.0"); got.Code != 404 {
-				t.Fatalf("retired Hub route %s %s returned %d", method, target, got.Code)
-			}
+		got := fetch("GET", target, "Mozilla/5.0")
+		if got.Code != http.StatusOK || !strings.Contains(got.Body.String(), `"@type":"CollectionPage"`) {
+			t.Fatalf("Hub route %s returned %d without CollectionPage", target, got.Code)
+		}
+		head := fetch("HEAD", target, "Mozilla/5.0")
+		if head.Code != http.StatusOK || head.Body.Len() != 0 || head.Header().Get("Content-Length") == "" {
+			t.Fatalf("HEAD Hub route %s returned %d body=%d", target, head.Code, head.Body.Len())
 		}
 	}
 	for _, target := range []string{"/apps/blink", "/apps/linkedin", "/linkage", "/links"} {
-		if got := fetch("GET", target, "Mozilla/5.0"); got.Code != 200 {
-			t.Errorf("unrelated detail path %s returned %d", target, got.Code)
+		if got := fetch("GET", target, "Mozilla/5.0"); got.Code != http.StatusOK || !strings.Contains(got.Body.String(), `"@type":"CollectionPage"`) {
+			t.Errorf("configured trigger path %s returned %d without Hub markup", target, got.Code)
 		}
 	}
+	if got := fetch("GET", "/apps/ordinary", "Mozilla/5.0"); got.Code != http.StatusOK || !strings.Contains(got.Body.String(), `data-core-page-type=`) {
+		t.Fatalf("ordinary detail path returned %d without legacy detail markup", got.Code)
+	}
 	detail := fetch("GET", "/apps/example?lan=id", "Mozilla/5.0")
-	if detail.Code != 200 || strings.Contains(detail.Body.String(), ">LK<") || strings.Contains(detail.Body.String(), `href="/link/`) {
-		t.Fatal("detail page still exposes the retired /link footer entry")
+	if detail.Code != http.StatusOK || !strings.Contains(detail.Body.String(), ">LK</a>") || !strings.Contains(detail.Body.String(), `href="/link/"`) {
+		t.Fatal("detail page is missing the /link footer entry")
 	}
 	if queries != 0 {
 		t.Fatalf("public requests performed %d SQL reads", queries)
@@ -73,12 +73,15 @@ func TestPublicHubRoutesAreRemoved(t *testing.T) {
 	if err := conn.Close(); err != nil {
 		t.Fatal(err)
 	}
-	if got := fetch("GET", "/apps/example?lan=id", "Googlebot"); got.Code != 200 || !strings.Contains(got.Body.String(), `data-core-page-type=`) {
+	if got := fetch("GET", "/link/?lan=id", "Googlebot"); got.Code != http.StatusOK || !strings.Contains(got.Body.String(), `"@type":"CollectionPage"`) {
+		t.Fatal("Hub page did not survive DB outage with the loaded snapshot")
+	}
+	if got := fetch("GET", "/apps/example?lan=id", "Googlebot"); got.Code != http.StatusOK || !strings.Contains(got.Body.String(), `data-core-page-type=`) {
 		t.Fatal("detail page did not survive DB outage with the loaded snapshot")
 	}
 }
 
-func TestRetiredLinkPathsWithPrefix(t *testing.T) {
+func TestHubPathsWithPrefix(t *testing.T) {
 	rt := testRuntime(t)
 	if err := UpdateRuntime(t.Context(), rt.db, func(tx *gorm.DB) error {
 		return tx.Model(&SiteConfig{}).Where("site_key = ?", "default").Update("route_prefix", "test").Error
@@ -89,13 +92,13 @@ func TestRetiredLinkPathsWithPrefix(t *testing.T) {
 		t.Fatal(err)
 	}
 	router := NewRouterWithRuntime(rt, RouterOptions{AssetRoot: "../../assets"})
-	for _, path := range []string{"/testlink", "/testlink/20261125/0/", "/testrouter.php/link/", "/apps/example?path=/testlink/"} {
+	for _, path := range []string{"/testlink", "/testlink/20261125/0/", "/apps/example?path=/testlink/"} {
 		r := httptest.NewRequest("GET", path, nil)
 		r.Host = "example.test"
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, r)
-		if w.Code != http.StatusNotFound {
-			t.Errorf("retired prefixed route %s returned %d", path, w.Code)
+		if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), `"@type":"CollectionPage"`) {
+			t.Errorf("prefixed Hub route %s returned %d without CollectionPage", path, w.Code)
 		}
 	}
 }

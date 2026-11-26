@@ -270,7 +270,7 @@ func legacyBuildLinks(p *LegacyPage, s LegacySnapshot) {
 		})
 		p.MainExternalLinks = legacyExternalTargets(rows[:min(externalLimit, len(rows))])
 	}
-	for _, item := range [][2]string{{"telegram", "TG"}, {"instagram", "IG"}, {"x", "X"}, {"youtube", "YT"}} {
+	for _, item := range [][2]string{{"telegram", "TG"}, {"instagram", "IG"}, {"x", "X"}, {"youtube", "YT"}, {"link", "LK"}} {
 		p.SocialLinks = append(p.SocialLinks, LegacyLink{Title: item[1], Path: p.internalURL("/"+item[0]+"/", false)})
 	}
 	for _, group := range []struct {

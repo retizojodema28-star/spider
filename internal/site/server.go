@@ -5,6 +5,7 @@ import (
 	"context"
 	"embed"
 	"encoding/json"
+	"errors"
 	"html/template"
 	"log"
 	"net/http"
@@ -224,15 +225,17 @@ func NewRouterWithRuntime(runtime *Runtime, opts RouterOptions) *gin.Engine {
 		snapshot.ShowListPanel = cfg.ShowListPanel
 		snapshot.ShowSubdomainPanel = cfg.ShowSubdomainPanel
 		snapshot.ShowExternalPanel = cfg.ShowExternalPanel
-		// Retire the /link endpoint and its normalized aliases, not every
-		// detail slug containing "link". Check both the actual request path
-		// and the effective legacy path so query overrides cannot revive it.
-		request := legacyRequest(c.Request, cfg, snapshot)
-		if retiredLinkPath(c.Request.URL.Path, cfg.RoutePrefix) || retiredLinkPath(request.NormalizedPath, cfg.RoutePrefix) {
-			c.Data(http.StatusNotFound, "text/plain; charset=utf-8", nil)
+		hubPage, hubErr := BuildHubPage(c.Request, cfg, snapshot, s.Hub)
+		if hubErr == nil {
+			c.Header("X-Runtime-Revision", strconv.FormatUint(s.Revision, 10))
+			renderer.render(c, "hub.html", hubPage)
 			return
 		}
-		snapshot.HubEnabled = false
+		if !errors.Is(hubErr, ErrNotHubRoute) {
+			log.Printf("build public hub page: %v", hubErr)
+			c.Status(500)
+			return
+		}
 		page, err := BuildLegacyPage(c.Request, cfg, snapshot)
 		if err != nil {
 			log.Printf("build public page: %v", err)
@@ -258,28 +261,6 @@ func NewRouterWithRuntime(runtime *Runtime, opts RouterOptions) *gin.Engine {
 	router.GET("/health/startup", public)
 	router.NoRoute(public)
 	return router
-}
-
-func retiredLinkPath(path, prefix string) bool {
-	path = strings.ToLower(normalizePHPPath(path))
-	prefix = NormalizeLegacyPrefix(prefix)
-	if prefix != "" && prefix != "#" {
-		parts := strings.Split(strings.TrimPrefix(path, "/"), "/")
-		if len(parts) > 0 && strings.HasPrefix(parts[0], prefix) {
-			rest := strings.TrimPrefix(parts[0], prefix)
-			if rest != "" {
-				parts[0] = rest
-				path = "/" + strings.Join(parts, "/")
-			}
-		}
-	}
-	for _, script := range []string{"/index.php/", "/799lh.php/", "/router.php/"} {
-		if strings.HasPrefix(path, script) {
-			path = "/" + strings.TrimPrefix(path, script)
-			break
-		}
-	}
-	return path == "/link" || strings.HasPrefix(path, "/link/")
 }
 
 func envOr(key, fallback string) string {

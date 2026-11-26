@@ -8,8 +8,8 @@ import (
 )
 
 // The PHP recordings remain unchanged. Adapt only the user-approved Go UI
-// differences: local images, relative same-site navigation, no related-APK
-// cards, and no footer LK entry. Multisets still retain every other duplicate.
+// differences: local images, relative same-site navigation, and no related-APK
+// cards. Multisets still retain every other duplicate.
 func approvedLegacyHrefs(t *testing.T, original []string, imageURL, canonical string, p LegacyPage) []string {
 	t.Helper()
 	counts := map[string]int{}
@@ -26,7 +26,6 @@ func approvedLegacyHrefs(t *testing.T, original []string, imageURL, canonical st
 	for _, link := range p.RelatedLinks {
 		remove(link.Path)
 	}
-	remove(p.Scheme + "://" + p.Host + ApplyLegacyPrefix("/link/", p.RoutePrefix))
 	// Managed external links are literal URLs even when they share this host.
 	keepAbsolute := map[string]int{}
 	for _, link := range p.MainExternalLinks {

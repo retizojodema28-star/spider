@@ -19,6 +19,7 @@ docker compose -f deployments/docker/docker-compose.yaml ps
 访问：
 
 - 公开页面：`http://127.0.0.1:18082/`
+- 外链聚合页：`http://127.0.0.1:18082/link/?lan=id`
 - 后台：`http://127.0.0.1:18082/admin/`
 - 健康检查：`http://127.0.0.1:18082/healthz`
 - `robots.txt`、`sitemap.xml`：明确返回 404
