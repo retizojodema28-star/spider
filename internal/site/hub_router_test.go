@@ -46,6 +46,12 @@ func TestPublicHubRoutesAreServed(t *testing.T) {
 		if got.Code != http.StatusOK || !strings.Contains(got.Body.String(), `"@type":"CollectionPage"`) {
 			t.Fatalf("Hub route %s returned %d without CollectionPage", target, got.Code)
 		}
+		if strings.Contains(got.Body.String(), "Tautan Mitra") || strings.Contains(got.Body.String(), "Partner Links") {
+			t.Fatalf("Hub route %s still renders the partner-links sidebar", target)
+		}
+		if strings.Contains(got.Body.String(), "Sumber Eksternal Pilihan") || strings.Contains(got.Body.String(), "Selected External Resources") {
+			t.Fatalf("Hub route %s still renders the selected external-resources section", target)
+		}
 		head := fetch("HEAD", target, "Mozilla/5.0")
 		if head.Code != http.StatusOK || head.Body.Len() != 0 || head.Header().Get("Content-Length") == "" {
 			t.Fatalf("HEAD Hub route %s returned %d body=%d", target, head.Code, head.Body.Len())

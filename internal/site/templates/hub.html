@@ -22,21 +22,16 @@ h1,h2,h3,p{margin-top:0}
 .topnav-h{font-size:14px;font-weight:750;color:var(--green);margin-right:18px}
 .topnav a{max-width:100%;font-size:13px;padding:5px 10px;background:#f0f5f2;color:#375746;border-radius:3px}
 .wrap{width:min(1120px,calc(100% - 40px));margin:0 auto;padding:28px 0 36px}
-.layout{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:28px;align-items:start}
-.layout>*,.date-nav-grid>*,.resource-grid>*{min-width:0}
-.side{grid-column:2;grid-row:1;padding:18px 0;border-top:3px solid var(--green)}
-.side h2{font-size:15px;margin:0 0 12px}
-.side ul{list-style:none;margin:0;padding:0}
-.side li{border-top:1px solid var(--line);padding:10px 0}
-.side a{font-size:13px}
-.main{grid-column:1;grid-row:1;background:white;padding:28px 32px;min-width:0}
+.layout{display:block}
+.layout>*,.date-nav-grid>*{min-width:0}
+.main{background:white;padding:28px 32px;min-width:0}
 .main h1{font-size:28px;line-height:1.25;margin:0 0 10px;font-weight:750}
 .main p{margin-bottom:14px}
 .sub{font-size:14px;color:var(--muted)}
 .breadcrumbs{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:22px;font-size:12px;color:var(--muted)}
 .breadcrumbs a{color:var(--muted)}
-.article,.resources,.related,.faq,.date-nav{margin-top:28px;padding-top:24px;border-top:1px solid var(--line)}
-.article h2,.resources h2,.related h2,.faq h2,.date-nav h2{font-size:19px;line-height:1.35;margin:0 0 16px}
+.article,.related,.faq,.date-nav{margin-top:28px;padding-top:24px;border-top:1px solid var(--line)}
+.article h2,.related h2,.faq h2,.date-nav h2{font-size:19px;line-height:1.35;margin:0 0 16px}
 .article-block{margin-top:20px}
 .article-block h3{font-size:16px;margin:0 0 8px}
 .article-block p{font-size:14px;line-height:1.8;color:#41484d}
@@ -49,13 +44,6 @@ h1,h2,h3,p{margin-top:0}
 .date-nav-links,.related-links,.intro-links{display:flex;flex-wrap:wrap;gap:8px}
 .date-nav-links a{max-width:100%;padding:5px 9px;border:1px solid #d5e9dd;border-radius:3px;color:var(--green);font-size:12px;line-height:1.5}
 .date-nav-links a:hover{background:#f0f5f2;text-decoration:none}
-.resource-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
-.resource-card{padding:16px 0;border-top:1px solid var(--line);font-size:13px}
-.resource-profile-card{display:flex;flex-direction:column;gap:10px}
-.resource-profile-card p{margin:0;color:#41484d;line-height:1.75}
-.profile-title{font-size:15px}
-.profile-title a{font-weight:750}
-.profile-website,.profile-tags{overflow-wrap:anywhere}
 .related-links a,.intro-links a{max-width:100%;padding:5px 10px;border:1px solid var(--line);font-size:13px;border-radius:3px}
 .faq details{padding:13px 0;border-top:1px solid var(--line)}
 .faq summary{cursor:pointer;font-size:14px;font-weight:650}
@@ -66,13 +54,12 @@ h1,h2,h3,p{margin-top:0}
 .intro-links{margin-top:12px}
 .foot{margin-top:28px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
 @media(max-width:1160px){.topnav-inner{width:calc(100% - 40px)}}
-@media(max-width:880px){.layout{grid-template-columns:minmax(0,1fr);gap:20px}.side{grid-column:1;grid-row:2;padding:12px 0}.side ul{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px}.side h2{margin-bottom:8px}.main{padding:24px}}
-@media(max-width:600px){.wrap{width:calc(100% - 28px);padding-top:18px}.topnav-inner{width:calc(100% - 28px);min-height:58px}.main{padding:22px 16px}.main h1{font-size:23px}.date-nav-grid,.resource-grid{grid-template-columns:minmax(0,1fr);gap:16px}.side ul{grid-template-columns:minmax(0,1fr)}.intro{padding:16px}.seo-image{padding:12px}.article h2,.resources h2,.related h2,.faq h2,.date-nav h2{font-size:18px}}
+@media(max-width:880px){.main{padding:24px}}
+@media(max-width:600px){.wrap{width:calc(100% - 28px);padding-top:18px}.topnav-inner{width:calc(100% - 28px);min-height:58px}.main{padding:22px 16px}.main h1{font-size:23px}.date-nav-grid{grid-template-columns:minmax(0,1fr);gap:16px}.intro{padding:16px}.seo-image{padding:12px}.article h2,.related h2,.faq h2,.date-nav h2{font-size:18px}}
 </style>
 </head><body>
 <nav class="topnav" aria-label="{{.Labels.nav_heading}}"><div class="topnav-inner"><span class="topnav-h">{{.Labels.nav_heading}}</span>{{range .Subdomains}}<a {{$.Href .URL}}{{if $.Config.LinkRel}} rel="{{$.Config.LinkRel}}"{{end}}>{{.Anchor}}</a>{{end}}</div></nav>
 <div class="wrap"><div class="layout">
-<aside class="side" aria-label="{{.Labels.side_heading}}"><h2>{{.Labels.side_heading}}</h2><ul>{{range .LeftLinks}}<li><a {{$.AbsoluteHref .URL}}{{if $.Config.LinkRel}} rel="{{$.Config.LinkRel}}"{{end}} target="_blank">{{.Anchor}}</a></li>{{end}}</ul></aside>
 <main class="main">
 {{if .Breadcrumbs}}<nav class="breadcrumbs" aria-label="Breadcrumb">{{range $i,$crumb:=.Breadcrumbs}}{{if $i}}<span>/</span>{{end}}<a {{$.Href $crumb.URL}}>{{$crumb.Anchor}}</a>{{end}}</nav>{{end}}
 <h1>{{.Labels.main_heading}}</h1><p class="sub">{{.Labels.main_subtitle}}</p><p>{{.IntroText}}</p>
@@ -80,9 +67,6 @@ h1,h2,h3,p{margin-top:0}
 {{if .Images.Primary}}<figure class="seo-image"><img src="{{.Images.Primary}}" alt="{{.Images.Alt}}" width="1200" height="630" loading="eager"></figure>{{end}}
 {{if .DateNavigation}}<section class="date-nav" aria-label="{{.Sections.internal_nav}}"><h2>{{.Sections.internal_nav}}</h2><div class="date-nav-grid">{{range .DateNavigation}}<div class="date-nav-day"><h3>{{.Label}}</h3><div class="date-nav-links">{{range .Links}}<a {{$.Href .URL}}>{{.Anchor}}</a>{{end}}</div></div>{{end}}</div></section>{{end}}
 {{if .RestArticles}}<section class="article article-more" aria-label="延伸正文"><h2>{{.Sections.article}}</h2>{{range .RestArticles}}<article class="article-block"><h3>{{.Heading}}</h3><p>{{.Lead}}{{with .Link}}<a {{$.AbsoluteHref .URL}}{{if $.Config.LinkRel}} rel="{{$.Config.LinkRel}}"{{end}} target="_blank">{{.Anchor}}</a>{{end}}{{.Tail}}</p></article>{{end}}</section>{{end}}
-{{if .ResourceCards}}<section class="resources" aria-label="精选外链资源"><h2>{{.Sections.resources}}</h2><div class="resource-grid">{{range .ResourceCards}}<article class="resource-card resource-profile-card">
-<p class="profile-title"><a {{$.AbsoluteHref .URL}}{{if $.Config.LinkRel}} rel="{{$.Config.LinkRel}}"{{end}} target="_blank">{{.Keyword}}</a>: {{.Summary}}</p><p><strong>{{.Keyword}}:</strong> {{.Paragraph}}</p><p class="profile-website"><strong>Website:</strong><br><a {{$.AbsoluteHref .Website}}{{if $.Config.LinkRel}} rel="{{$.Config.LinkRel}}"{{end}} target="_blank">{{.Website}}</a></p>
-</article>{{end}}</div></section>{{end}}
 {{if .RelatedPages}}<section class="related" aria-label="相关站内页面"><h2>{{.Sections.related}}</h2><div class="related-links">{{range .RelatedPages}}<a {{$.Href .URL}}>{{.Anchor}}</a>{{end}}</div></section>{{end}}
 {{if .FAQ}}<section class="faq" aria-label="FAQ"><h2>{{.Sections.faq}}</h2>{{range .FAQ}}<details><summary>{{.Question}}</summary><p>{{.Answer}}</p></details>{{end}}</section>{{end}}
 <section class="intro" aria-label="{{.Labels.intro_heading}}"><h2>{{.Labels.intro_heading}}</h2><p>{{.IntroText}}</p>{{if .BottomLinks}}<div class="intro-cta-h" style="font-size:12px;font-weight:700;text-transform:uppercase;color:#0c4a6e;margin-top:12px;letter-spacing:.06em">{{.Labels.intro_cta}}</div><div class="intro-links">{{range .BottomLinks}}<a {{$.AbsoluteHref .URL}}{{if $.Config.LinkRel}} rel="{{$.Config.LinkRel}}"{{end}} target="_blank">{{.Anchor}}</a>{{end}}</div>{{end}}</section>
