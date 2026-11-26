@@ -22,6 +22,7 @@ docker compose -f deployments/docker/docker-compose.yaml ps
 - 后台：`http://127.0.0.1:18082/admin/`
 - 健康检查：`http://127.0.0.1:18082/healthz`
 - `robots.txt`、`sitemap.xml`：明确返回 404
+- 普通 404：按 PHP 兼容规则转首页并返回 HTTP 200
 
 管理员凭据只从本机的 `deployments/docker/.env` 读取，不写入源码、文档或日志。外部转发工具及其配置在工程目录之外单独维护，工程不包含服务端地址、认证信息或转发配置。
 
