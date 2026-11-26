@@ -1,0 +1,92 @@
+[
+  {
+    "app_slug": "",
+    "kind": "internal",
+    "language": "id",
+    "anchor_text": "Semua aplikasi Android",
+    "target_url": "/",
+    "category": "Navigasi",
+    "weight": 100,
+    "remark": "Navigasi utama"
+  },
+  {
+    "app_slug": "sample-app-one",
+    "kind": "internal",
+    "language": "id",
+    "anchor_text": "Aplikasi alat pilihan",
+    "target_url": "/apps/sample-app-one",
+    "category": "Kategori",
+    "weight": 90,
+    "remark": "Tautan internal kategori"
+  },
+  {
+    "app_slug": "sample-app-two",
+    "kind": "internal",
+    "language": "id",
+    "anchor_text": "Aplikasi belajar harian",
+    "target_url": "/apps/sample-app-two",
+    "category": "Rekomendasi",
+    "weight": 90,
+    "remark": "Rekomendasi internal"
+  },
+  {
+    "app_slug": "sample-app-three",
+    "kind": "internal",
+    "language": "id",
+    "anchor_text": "Aplikasi produktivitas",
+    "target_url": "/apps/sample-app-three",
+    "category": "Rekomendasi",
+    "weight": 90,
+    "remark": "Rekomendasi internal"
+  },
+  {
+    "app_slug": "sample-app-one",
+    "kind": "external",
+    "language": "id",
+    "anchor_text": "Informasi Sample App One",
+    "target_url": "https://reference.example/apps/sample-app-one",
+    "category": "Referensi",
+    "weight": 80,
+    "remark": "Tautan eksternal terkelola"
+  },
+  {
+    "app_slug": "sample-app-one",
+    "kind": "external",
+    "language": "id",
+    "anchor_text": "Situs pengembang contoh",
+    "target_url": "https://studio.example/sample-app-one",
+    "category": "Pengembang",
+    "weight": 60,
+    "remark": "Referensi pengembang"
+  },
+  {
+    "app_slug": "sample-app-two",
+    "kind": "external",
+    "language": "id",
+    "anchor_text": "Informasi Sample App Two",
+    "target_url": "https://reference.example/apps/sample-app-two",
+    "category": "Referensi",
+    "weight": 80,
+    "remark": "Tautan aplikasi contoh"
+  },
+  {
+    "app_slug": "sample-app-three",
+    "kind": "external",
+    "language": "id",
+    "anchor_text": "Informasi Sample App Three",
+    "target_url": "https://reference.example/apps/sample-app-three",
+    "category": "Referensi",
+    "weight": 80,
+    "remark": "Tautan aplikasi contoh"
+  },
+  {
+    "app_slug": "",
+    "kind": "external",
+    "language": "id",
+    "anchor_text": "Katalog aplikasi contoh",
+    "target_url": "https://reference.example/apps",
+    "category": "Footer",
+    "weight": 20,
+    "remark": "Tautan contoh untuk pratinjau"
+  }
+]

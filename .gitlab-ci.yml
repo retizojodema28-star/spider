@@ -1,0 +1,16 @@
+image: golang:1.25.0
+
+stages:
+  - verify
+
+verify:
+  stage: verify
+  script:
+    - go mod download
+    - go mod verify
+    - make vet cover
+    - CGO_ENABLED=0 make build
+  artifacts:
+    paths:
+      - _output/bin/
+      - _output/coverage.out

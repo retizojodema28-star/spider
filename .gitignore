@@ -1,0 +1,25 @@
+# Build/test output and local Go workspaces.
+/_output/
+/site
+/worker
+*.test
+*.out
+*.exe
+go.work
+go.work.sum
+
+# Local configuration; examples remain visible.
+.env
+.env.*
+!.env.example
+!.env.*.example
+.air.toml
+
+# Editors and operating-system files.
+.idea/
+.vscode/
+.history/
+.worktrees/
+.DS_Store
+._*
+*~

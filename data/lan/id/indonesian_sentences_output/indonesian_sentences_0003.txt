@@ -1,0 +1,40 @@
+Pengelompokan berdasarkan fungsi membuat daftar aplikasi lebih mudah dipahami.
+Penyimpanan aset pada direktori lokal mempercepat penyajian gambar dalam halaman publik.
+Perubahan pengaturan diterapkan setelah pemeriksaan agar konfigurasi tetap konsisten.
+Halaman informasi menampilkan data yang telah disetujui oleh operator untuk publikasi.
+Pengguna dapat meninjau kembali ringkasan sebelum melanjutkan ke bagian berikutnya.
+Pembaruan katalog dikerjakan oleh proses terjadwal dan hasilnya dapat diperiksa dari panel.
+Penjelasan teknis disajikan dengan bahasa yang singkat, jelas, dan mudah diterapkan.
+Tautan terkait dikelompokkan berdasarkan tujuan agar navigasi tidak membingungkan.
+Kata kunci halaman berasal dari data yang telah disimpan dan diperiksa sebelumnya.
+Gambar contoh diberi urutan agar pembaca dapat mengikuti alur informasi dengan baik.
+Jika data belum tersedia, halaman menampilkan keterangan yang jelas kepada pengguna.
+Komponen bersama mengurangi perbedaan tampilan antara halaman daftar dan halaman detail.
+Pengaturan situs dapat disesuaikan tanpa mengubah berkas aset yang sudah tersimpan.
+Pemeriksaan akhir dilakukan sebelum halaman dipakai sebagai contoh untuk pengguna lain.
+Rancangan data sederhana membantu proses pemindahan antarlingkungan tetap dapat dilacak.
+Operator dapat mengulang proses yang gagal setelah penyebab masalah diperbaiki.
+Penggunaan format terstruktur membuat data mudah diimpor dan diekspor kembali.
+Keterangan versi membantu pembaca mengetahui apakah suatu aplikasi masih mendapatkan pembaruan.
+Kumpulan gambar yang lengkap membuat halaman detail lebih informatif dan seimbang.
+Navigasi yang konsisten membantu pengguna berpindah dari daftar ke halaman detail.
+Perubahan lokal diperiksa sebelum diterapkan agar data yang telah ada tetap aman.
+Pusat data menyimpan contoh aplikasi dan tautan terkait untuk kebutuhan pratinjau.
+Setiap bagian halaman memiliki judul yang menjelaskan tujuan informasi tersebut.
+Pengguna dapat memahami fungsi aplikasi dari ringkasan tanpa membaca seluruh detail teknis.
+Sistem menyediakan tampilan yang sama untuk pengguna biasa dan alat pemeriksa halaman.
+Penyajian yang stabil membantu proses pengujian pada berbagai jenis peramban.
+Informasi terpenting diletakkan di bagian awal agar mudah ditemukan oleh pembaca.
+Pengaturan bahasa dan gambar dapat dihubungkan berdasarkan situs yang sedang digunakan.
+Katalog yang teratur memudahkan operator menambahkan aplikasi baru secara bertahap.
+Pemeriksaan otomatis membantu menjaga agar semua aset lokal dapat dibuka dari halaman.
+Pembaruan kecil dapat dilakukan tanpa mengganggu data lain yang sudah dipublikasikan.
+Halaman hasil pencarian menampilkan judul, kategori, dan ringkasan secara ringkas.
+Pengguna dapat kembali ke halaman utama melalui navigasi yang tersedia pada bagian atas.
+Tampilan halaman detail dirancang untuk menonjolkan informasi aplikasi dan gambar pendukung.
+Konten yang tersusun baik membantu pembaca mengambil keputusan dengan informasi yang cukup.
+Penyimpanan terpusat membuat data contoh lebih mudah diperiksa oleh seluruh tim.
+Catatan internal dipisahkan dari teks publik agar halaman tetap bersih bagi pembaca.
+Pemeriksaan tautan dilakukan setelah perubahan data untuk memastikan tujuan tetap benar.
+Penggunaan nama netral membuat data contoh dapat dipakai dalam berbagai lingkungan.
+Sistem menyimpan status aktif agar hanya entri yang disetujui tampil kepada publik.

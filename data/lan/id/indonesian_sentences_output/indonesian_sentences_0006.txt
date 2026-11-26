@@ -1,0 +1,40 @@
+Informasi yang terstruktur membuat proses pembacaan dan pemeriksaan menjadi lebih efisien.
+Pemisahan situs dan bahasa memungkinkan konfigurasi dipakai kembali untuk koleksi berbeda.
+Sistem mempertahankan data yang telah diedit ketika proses seed dijalankan kembali.
+Pengguna dapat meninjau aplikasi yang serupa dari bagian tautan terkait.
+Pembaruan katalog dilakukan dengan urutan yang dapat dilacak dari log pekerjaan.
+Rancangan teks menjaga agar contoh tetap mudah diterjemahkan pada tahap berikutnya.
+Pemeriksaan responsive memastikan elemen tidak melebar keluar dari layar.
+Gambar disajikan dengan ukuran yang sesuai agar waktu muat tetap rendah.
+Operator dapat memperbaiki baris yang salah lalu menjalankan impor kembali.
+Tampilan daftar menonjolkan judul dan kategori untuk membantu pemindaian cepat.
+Sistem memeriksa tujuan tautan eksternal sebelum menampilkannya sebagai tombol.
+Kumpulan metadata membantu halaman menjelaskan isi kepada pembaca dan mesin pencari.
+Penyajian aplikasi tetap informatif walaupun berkas program tidak disimpan oleh sistem.
+Pengguna dapat melihat informasi pembaruan tanpa meninggalkan halaman yang sedang dibaca.
+Konfigurasi yang tersimpan di database dimuat saat proses aplikasi dimulai.
+Pekerjaan latar belakang menggunakan data yang sudah disiapkan agar hasil publik konsisten.
+Pengaturan yang sederhana memudahkan operator baru memahami alur pengelolaan.
+Contoh data netral dapat dipakai untuk menguji rute, gambar, dan tautan secara bersamaan.
+Halaman publik tetap dapat dibuka saat proses pembaruan data sedang tidak berjalan.
+Pemeriksaan akhir menilai isi, aset, tautan, dan tampilan sebelum rilis pratinjau.
+Koleksi aplikasi yang rapi membantu pembaca menemukan informasi sesuai kebutuhannya.
+Pembaruan lokal menjaga agar lingkungan pengujian tidak bergantung pada sumber luar.
+Pengguna dapat berpindah kategori melalui menu yang tersedia di bagian atas halaman.
+Penyimpanan konfigurasi membuat nilai pengaturan tetap sama setelah aplikasi dimulai ulang.
+Proses verifikasi memakai contoh yang dapat diulang sehingga hasil antarperubahan mudah dibandingkan.
+Judul halaman dan alamat kanonik disusun berdasarkan rute yang sedang dibuka.
+Informasi terkait dikelompokkan agar tombol yang tersedia tidak mengganggu ringkasan utama.
+Tampilan aplikasi dirancang untuk memberikan konteks sebelum pembaca mengambil tindakan.
+Operator dapat memeriksa data dan aset dari satu panel dengan alur yang teratur.
+Pembaruan bahasa tetap mempertahankan jumlah kalimat yang cukup untuk proses pembentukan halaman.
+Halaman lokal menyediakan contoh lengkap untuk menilai struktur dan keterbacaan antarmuka.
+Sistem memisahkan sumber data, aset gambar, dan rute publik untuk pemeliharaan yang jelas.
+Pengguna dapat memahami status aplikasi dari label versi, kategori, dan waktu pembaruan.
+Penyusunan contoh secara netral membuat pengujian tidak bergantung pada merek tertentu.
+Pemeriksaan berulang membantu memastikan perubahan kecil tidak menimbulkan halaman kosong.
+Konten yang ringkas dan teratur menjaga halaman tetap mudah dibaca pada perangkat apa pun.
+Pembaruan data yang berhasil dapat diperiksa dari hasil halaman dan catatan proses.
+Navigasi yang menggunakan tujuan jelas membantu pembaca kembali ke bagian sebelumnya.
+Gambar lokal memperlihatkan hasil akhir tanpa perlu meminta berkas dari server lain.
+Pengelolaan data dilakukan melalui validasi sebelum perubahan disimpan ke database.

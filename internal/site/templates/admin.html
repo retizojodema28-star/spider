@@ -1,0 +1,118 @@
+{{define "admin.html"}}<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>APK 站点管理后台</title>
+<style>body{font:16px system-ui;margin:0;background:#f3f5f8;color:#172130}main{max-width:1100px;margin:auto;padding:24px}header{display:flex;align-items:center;justify-content:space-between;gap:12px}section{background:white;padding:20px;border:1px solid #d9dfe8;border-radius:10px;margin:18px 0}label{display:block;margin:10px 0}input,select,textarea,button{font:inherit;padding:9px;border:1px solid #aab4c3;border-radius:5px}textarea{box-sizing:border-box;width:100%;font:14px ui-monospace,monospace;min-height:200px}button{cursor:pointer;background:#eaf0fa;color:#123560;margin:4px}button:disabled{opacity:.5;cursor:wait}input{max-width:90%}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f4f6f9;padding:12px;max-height:390px;overflow:auto}#message{white-space:pre-wrap}nav{display:flex;flex-wrap:wrap;gap:6px}.error{color:#a41920}.muted{color:#536174;font-size:14px}[hidden]{display:none!important}</style></head>
+<body><style>main,section,input,select,textarea,button{box-sizing:border-box}main{width:100%;max-width:1148px}select{max-width:100%}header h1{min-width:0;overflow-wrap:anywhere}#importSection .muted{overflow-wrap:anywhere}header button{flex-shrink:0}@media(max-width:600px){main{padding:16px}section{padding:16px}header{align-items:center;gap:8px}header h1{font-size:24px;line-height:1.2}header button{margin-right:0}input{max-width:100%}label select{display:block;margin-top:6px}#records{width:100%}}</style><main><header><h1>站点管理后台</h1><button id="logout" hidden>退出登录</button></header><p id="message" role="status" aria-live="polite"></p>
+<section id="login"><h2>管理员登录</h2><form id="loginForm"><label>用户名 <input name="username" autocomplete="username" required></label><label>密码 <input name="password" type="password" autocomplete="current-password" required></label><button>登录</button></form></section>
+<div id="workspace" hidden><nav id="tabs"></nav><label>站点标识 <input id="siteKey" value="default" aria-label="站点标识"></label>
+<section><h2 id="heading">站点设置</h2><p id="help" class="muted"></p><button id="reload">刷新列表</button><label>当前记录<select id="records"><option value="">新建记录</option></select></label><details><summary>JSON 字段说明（保留接口键名）</summary><pre id="fieldHelp" class="muted"></pre></details><pre id="list"></pre>
+<label for="editor">记录编辑器（JSON）</label><textarea id="editor" spellcheck="false"></textarea><div><button id="save">保存</button><button id="remove">删除所选</button></div></section>
+<section id="importSection" hidden><h2>导入链接</h2><p class="muted">支持格式：URL,标签；外链字段：域名、语言、锚文本、目标 URL、分类、权重、启用状态、备注。内部域名字段：域名、标题、路径、语言、分类、权重、启用状态、备注。支持逗号、制表符和竖线分隔。</p><label id="importFormatLabel">输入格式 <select id="importFormat"><option value="legacy">兼容旧版（PHP 规则）</option><option value="normalized">规范化预览格式</option></select></label><p id="importFormatHelp" class="muted">兼容旧版模式保留原有 HTML 锚点解析规则。若使用预处理生成的规范化文本，请明确选择“规范化预览格式”，以保留各列数据。</p><label>导入策略 <select id="strategy"><option value="append">追加</option><option value="replace">替换整个集合</option></select></label><label>生效日期（仅外链） <input id="date" type="date"></label><textarea id="importText" placeholder="请在此粘贴数据，每行一条"></textarea><button id="preview">预览外链导入</button><button id="import">导入</button><details><summary>导入预览字段说明</summary><pre id="previewHelp" class="muted"></pre></details><pre id="previewResult"></pre></section>
+<section><h2>Hub 子域名</h2><p class="muted">刷新会为该域名生成并保存有序子域名列表。</p><label>域名 <input id="hubDomain" placeholder="example.com"></label><label>生成规则 DSL <input id="hubDSL" value="{s10n10}"></label><label>数量 <input id="hubCount" type="number" min="1" max="200" value="20"></label><button id="hubRead">读取列表</button><button id="hubRefresh">生成并保存</button><details><summary>Hub JSON 字段说明</summary><pre id="hubPoolHelp" class="muted"></pre></details><pre id="hubPool"></pre></section>
+<section><h2>语言数据刷新任务</h2><p class="muted">独立 Worker 会读取已部署的本地语言文件。任务成功后整体发布新的语言数据；失败时保留当前数据。</p><button id="queue">加入刷新队列</button><button id="refreshTasks">刷新任务列表</button><label>失败的任务 <select id="failedJobs"></select><button id="retry">重试</button></label><details><summary>任务 JSON 字段说明</summary><pre id="tasksHelp" class="muted"></pre></details><pre id="tasks"></pre></section></div>
+</main><script>
+'use strict';
+const $=id=>document.getElementById(id);let csrf='',selected='settings',rows=[],activeRecord=null,loadGeneration=0,loadedCollection='',loadedSite='',authEpoch=0;const pendingWrites=new Set();
+const tabs={hub:{title:'Hub 设置',path:'/hub/config',example:{enabled:true,trigger_keyword:'link',subdomain_dsl:'{s10n10}',subdomain_count:20,external_min:80,external_max:120,bottom_link_count:6,date_nav_num_max:2000,link_rel:'',intro_min_words:220,show_list_panel:false,show_subdomain_panel:false,show_external_panel:false}},settings:{title:'站点设置',path:'/sites/config',example:{site_name:'APK Hub',default_lang:'id',route_prefix:'',download_base_url:'https://download.invalid/apk/',image_base_url:'/assets',main_page_external_link_limit:12,max_related_links:6,show_list_panel:false,show_subdomain_panel:false,show_external_panel:false}},languages:{title:'域名语言绑定',path:'/domain-lang-bindings',example:{domain:'example.com',lang:'id',remark:''}},images:{title:'域名图片绑定',path:'/domain-image-bindings',example:{domain:'example.com',image_base_url:'/assets',remark:''}},internal:{title:'内链管理',path:'/sites/links',type:'internal',example:{type:'internal',lang:'id',anchor_text:'Apps',target_url:'/apps',weight:100,enabled:true}},external:{title:'外链管理',path:'/external-links',type:'external',example:{lang:'id',domain:'example.com',anchor_text:'Website',target_url:'https://example.com/',weight:100,enabled:true}},main:{title:'首页外链',path:'/main-page-external-links',type:'main-external',example:{lang:'id',domain:'example.com',anchor_text:'Website',target_url:'https://example.com/',weight:100,enabled:true}},domains:{title:'内部域名管理',path:'/internal-domains',type:'internal-domain',example:{domain:'example.com',title:'Website',path:'/',lang:'id',weight:100,enabled:true}}};
+const fieldSets={
+ common:[['id','数据库记录编号'],['site_key','所属站点标识'],['created_at','创建时间'],['updated_at','最后更新时间']],
+ settings:[['site_config','站点配置对象'],['site_name','站点名称'],['default_lang','默认语言代码（如 id、en）'],['route_prefix','站点路由前缀'],['download_base_url','下载链接基础地址'],['image_base_url','本地图片基础路径'],['main_page_external_link_limit','外链数量上限（0～200，默认 12）'],['max_related_links','相关链接数量上限（0～6，默认 6）'],['show_list_panel','是否显示列表面板'],['show_subdomain_panel','是否显示子域名面板'],['show_external_panel','是否显示外链面板'],['supported_langs','支持的语言代码列表'],['revision','配置版本号']],
+ hub:[['enabled','是否启用 Hub'],['trigger_keyword','触发关键词'],['subdomain_dsl','子域名生成规则'],['subdomain_count','生成子域名数量'],['external_min','外链最少数量'],['external_max','外链最多数量'],['bottom_link_count','页底链接数量'],['date_nav_num_max','日期导航最大数值'],['link_rel','链接 rel 属性'],['intro_min_words','简介最少字数'],['show_list_panel','是否显示列表面板'],['show_subdomain_panel','是否显示子域名面板'],['show_external_panel','是否显示外链面板'],['domain','域名'],['count','本次生成数量'],['subdomains','生成的子域名列表']],
+ languages:[['domain','域名'],['lang','语言代码（如 id、en）'],['remark','备注原文'],['bindings','域名语言绑定列表'],['deleted','本次删除数量']],
+ images:[['domain','域名'],['image_base_url','本地图片基础路径'],['remark','备注原文'],['bindings','域名图片绑定列表'],['deleted','本次删除数量']],
+ links:[['app_slug','应用标识'],['type','记录类型（如 internal、external）'],['lang','语言代码（如 id、en）'],['domain','域名'],['anchor_text','链接锚文本原文'],['target_url','目标地址'],['url','兼容字段：目标地址'],['label','兼容字段：锚文本原文'],['title','显示标题原文'],['path','站内路径'],['category','分类原文'],['weight','排序权重'],['enabled','是否启用'],['remark','备注原文'],['php_id','旧系统逻辑编号，只读'],['links','链接记录列表'],['internal_domains','内部域名记录列表'],['total','记录总数'],['limit','本页数量上限'],['offset','分页起始位置'],['deleted','本次删除数量']],
+ import:[['line','源数据行号'],['message','该行校验错误（界面提示为中文）'],['url','预处理得出的目标地址'],['label','预处理得出的锚文本原文'],['normalized','预处理后的规范化数据'],['imported','成功导入数量'],['duplicates','重复记录数量'],['strategy','导入策略'],['effective_date','生效日期'],['source_file','来源文件']],
+ jobs:[['jobs','语言数据刷新任务列表'],['events','任务事件记录列表'],['workers','Worker 心跳列表'],['job_id','任务编号'],['languages','语言代码列表'],['status','任务状态'],['phase','当前阶段'],['attempts','已尝试次数'],['max_attempts','最多尝试次数'],['available_at','可运行时间'],['lease_until','任务租约到期时间'],['last_error','Worker 原始错误文本'],['result','Worker 原始结果文本'],['started_at','开始时间'],['finished_at','结束时间'],['attempt','事件对应的尝试次数'],['message','任务事件原始文本'],['seen_at','Worker 最近心跳时间'],['revision','运行时版本号']]
+};
+const apiErrorMessages=new Map(Object.entries({
+ 'invalid JSON body or unknown field':'请求数据格式无效或包含不支持的字段，请核对 JSON 字段说明。','expected one JSON object':'请求必须且只能包含一个 JSON 对象。','invalid origin or CSRF token':'安全校验失败，请刷新页面后重试。','login required':'登录已过期，请重新登录。','session required':'登录已过期，请重新登录。','invalid credentials':'用户名或密码错误。','too many login attempts; retry later':'登录尝试过于频繁，请稍后重试。','too many login sessions; retry later':'登录会话过多，请稍后重试。','account temporarily locked; retry after 15 minutes':'账户已临时锁定，请在 15 分钟后重试。','authentication storage unavailable':'认证服务暂时不可用，请稍后重试。','session storage unavailable':'会话服务暂时不可用，请稍后重试。','database write failed':'保存数据失败，请稍后重试。','job storage unavailable':'任务数据暂时不可用，请稍后重试。','worker storage unavailable':'Worker 状态暂时不可用，请稍后重试。','job event storage unavailable':'任务事件暂时不可用，请稍后重试。','job not found':'未找到该任务，可能已被移除。','failed job not found':'未找到可重试的失败任务。','unable to queue refresh':'无法创建刷新任务，请稍后重试。','a refresh is already queued or running':'已有刷新任务正在等待或运行。','record not found':'记录不存在或已被删除。','domain binding already exists; use PUT to update':'该绑定已存在，请选择现有记录进行编辑。','normalized format is only supported for external and main-external links':'规范化格式仅支持外链和首页外链。','strategy must be replace or append':'导入策略必须为替换或追加。','format must be legacy or normalized':'导入格式必须为兼容旧版或规范化。','import contains no rows':'没有可导入的数据行。','import is limited to 10000 rows':'单次最多导入 10000 行。','preview is limited to 10000 rows':'预览最多支持 10000 行。','unsupported delimiter':'不支持所选分隔符。','ambiguous normalized delimiter; quote field data containing separators':'无法识别分隔符，请为包含分隔符的字段加引号。','expected eight valid normalized columns (pipe, tab, or comma separated)':'规范化数据须包含 8 列，并使用竖线、制表符或逗号分隔。','invalid domain':'域名格式无效。','invalid domain port':'域名端口无效。','invalid URL':'地址格式无效。','URL must use http or https':'地址必须使用 http 或 https 协议。','expected a local absolute path':'路径必须是站内绝对路径。','path traversal is not allowed':'路径不能包含目录回退片段。','path must be normalized':'路径格式未规范化。','unsafe path':'路径包含不安全字符。','invalid path encoding':'路径编码格式无效。','internal domain required':'请填写内部域名。','id required for update':'编辑记录时必须提供记录编号。','invalid effective_date':'生效日期格式无效。','invalid source_file':'来源文件格式无效。','type required':'请填写记录类型。','site_key required':'请填写站点标识。','lang required':'请填写语言代码。','domain required':'请填写域名。','invalid enabled filter':'启用状态筛选值无效。','ids or all required':'请选择记录或选择全部记录。','domains or all required':'请提供域名列表或选择全部域名。','invalid id':'记录编号无效。','count must be 1..200':'数量必须介于 1 到 200 之间。','subdomain DSL exceeds DNS length':'子域名规则超出 DNS 长度限制。','subdomain namespace exhausted':'该子域名规则可生成的名称不足。','invalid subdomain_dsl':'子域名生成规则无效。','invalid trigger_keyword':'触发关键词无效。','hub numeric option out of range':'Hub 数值配置超出允许范围。','link limit must be 0..200':'首页外链数量上限必须介于 0 到 200 之间。','max_related_links must be 0..6':'相关链接数量上限必须介于 0 到 6 之间。','invalid site_name':'站点名称无效。','invalid route_prefix':'站点路由前缀无效。','invalid download_base_url':'下载链接基础地址无效。','invalid image_base_url':'图片基础路径无效。','image base must be a local /assets directory':'图片基础路径必须指向本地 /assets 目录。','image directory does not exist':'图片目录不存在。','image base is not a directory':'图片路径不是目录。','image directory contains no supported local images':'图片目录中没有受支持的本地图片。','ASSET_DIR unavailable':'图片资源目录暂不可用。','image directory escapes ASSET_DIR':'图片目录超出资源根目录。','type must be internal or external':'记录类型必须为 internal 或 external。'}));
+function apiErrorText(raw,status=0){
+ const text=String(raw||'').trim();if(apiErrorMessages.has(text))return apiErrorMessages.get(text);
+ const detail=text.replace(/^invalid admin data:\s*/,'');if(detail!==text)return apiErrorText(detail,status);
+ let match=text.match(/^unknown hub config field ([A-Za-z0-9_]+)$/);if(match)return `不支持的 Hub 配置字段：${match[1]}。`;
+ match=text.match(/^unsupported language "([^"]+)"$/);if(match)return `不支持的语言代码：${match[1]}。`;
+ match=text.match(/^invalid limit$/);if(match)return '分页数量格式无效。';
+ match=text.match(/^invalid offset$/);if(match)return '分页起始位置格式无效。';
+ match=text.match(/^limit must be 1\.\.500 and offset nonnegative$/);if(match)return '分页数量必须为 1 到 500，起始位置不能为负数。';
+ match=text.match(/^invalid field type$/);if(match)return '配置字段类型无效，请检查 JSON 字段说明。';
+ match=text.match(/^invalid link_rel$/);if(match)return '链接 rel 属性无效。';
+ match=text.match(/^subdomain label exceeds 63 characters$/);if(match)return '子域名标签不能超过 63 个字符。';
+ match=text.match(/^invalid delimited row$/);if(match)return '分隔数据行格式无效。';
+ match=text.match(/^invalid enabled$/);if(match)return '启用状态必须是 true 或 false。';
+ match=text.match(/^invalid weight$/);if(match)return '排序权重必须是数字。';
+ match=text.match(/^invalid text \(maximum (\d+) characters\)$/);if(match)return `文本格式无效，最多可输入 ${match[1]} 个字符。`;
+ match=text.match(/^weight must be (\d+\.\.\d+)$/);if(match)return `排序权重必须在 ${match[1].replace('..',' 到 ')} 之间。`;
+ match=text.match(/^(?:unknown|invalid) site_key$/);if(match)return '站点标识无效或不存在，请检查站点标识。';
+ match=text.match(/^invalid (site_name|route_prefix|download_base_url|image_base_url|anchor_text|target_url|title|path|category or remark|remark|lang|domain|source_file|effective_date|enabled)$/);if(match)return `字段 ${match[1]} 的值无效，请检查字段说明及输入格式。`;
+ match=text.match(/^row (\d+): (.+)$/);if(match)return `第 ${match[1]} 行：${apiErrorText(match[2],status)}`;
+ match=text.match(/^invalid import row (\d+): (.+)$/);if(match)return `第 ${match[1]} 行导入失败：${apiErrorText(match[2],status)}`;
+ if(/[\u3400-\u9fff]/.test(text))return text;
+ if(status===401)return '登录已过期，请重新登录。';if(status===403)return '安全校验未通过，请刷新页面后重试。';if(status===404)return '请求的数据不存在或已删除。';if(status===409)return '数据状态已变化或存在冲突，请刷新后重试。';if(status===429)return '操作过于频繁，请稍后重试。';if(status===503||status>=500)return '服务暂时不可用，请稍后重试。';if(status===400)return '请求数据格式无效，请检查 JSON 字段说明和值。';if(status===422)return '提交的数据未通过校验，请检查字段说明及输入范围。';return status?`请求失败（HTTP ${status}），请稍后重试。`:'请求失败，请稍后重试。';
+}
+function writeFieldHelp(target,fields){$(target).textContent=fields.map(([name,meaning])=>name+'：'+meaning).join('\n')}
+function updateFieldHelp(key){
+ const fields=[['ok','请求是否成功'],['data','本次接口返回的数据'],...(fieldSets[key]||[])];
+ if(['languages','images'].includes(key))fields.push(...fieldSets.common);
+ if(['internal','external','main','domains'].includes(key))fields.push(...fieldSets.common,...fieldSets.links);
+ writeFieldHelp('fieldHelp',fields);
+ writeFieldHelp('previewHelp',fieldSets.import);writeFieldHelp('hubPoolHelp',fieldSets.hub);writeFieldHelp('tasksHelp',fieldSets.jobs);
+}
+function message(text,error=false){$('message').textContent=text;$('message').className=error?'error':''}
+function staleRequest(){return Object.assign(Error('请求已被新的操作替代'),{stale:true})}
+async function api(path,method='GET',body){
+ const epoch=authEpoch;
+ try{
+  const response=await fetch('/admin/api'+path,{method,credentials:'same-origin',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:body===undefined?undefined:JSON.stringify(body)});
+  const value=await response.json();if(epoch!==authEpoch)throw staleRequest();
+  if(!response.ok){if(response.status===401){show(false);message('登录状态已过期，请重新登录',true);throw staleRequest()}throw Error(apiErrorText(value.message,response.status))}
+  return value;
+ }catch(error){if(epoch!==authEpoch)throw staleRequest();throw Error(apiErrorText(error.message))}
+}
+function show(auth){authEpoch++;$('login').hidden=auth;$('workspace').hidden=!auth;$('logout').hidden=!auth;if(!auth){loadGeneration++;loadedCollection='';rows=[];activeRecord=null;editorReady(false)}}
+async function session(){const r=await api('/session');csrf=r.data.csrf_token;show(r.data.authenticated);if(r.data.authenticated){await load();await tasks()}}
+function editable(record){const copy={...record};for(const k of ['created_at','updated_at','url','label','source_file','php_json','php_id'])delete copy[k];if(selected==='languages'||selected==='images')delete copy.id;return copy}
+function edit(record){activeRecord=record;$('editor').value=JSON.stringify(editable(record||tabs[selected].example),null,2)}
+function editorReady(ready){ready=ready&&!pendingWrites.has(authEpoch+':'+loadGeneration);for(const id of ['records','editor','save','remove','import','preview','importText','importFormat','strategy','date'])$(id).disabled=!ready}
+function currentCollection(){if(loadedCollection!==selected)throw Error('请等待所选数据集合加载完成');return selected}
+async function load(){
+ const key=selected,site=$('siteKey').value,t=tabs[key],epoch=authEpoch,generation=++loadGeneration;
+ loadedCollection='';loadedSite='';rows=[];activeRecord=null;editorReady(false);
+ $('list').textContent='正在加载…';$('editor').value='';$('records').replaceChildren(new Option('新建记录',''));
+ $('heading').textContent=t.title;$('help').textContent=key==='images'?'请使用已有的 /assets 目录，不支持远程图片地址。':key==='languages'?'新增使用 POST；编辑已有绑定使用 PUT。':key==='settings'?'配置会通过运行时版本轮询生效。默认语言为印度尼西亚语（id）。':'选择记录后可编辑或删除。导入数据会先校验，通过后才会写入。';updateFieldHelp(key);
+ $('importSection').hidden=!t.type;$('importFormatLabel').hidden=key!=='external'&&key!=='main';$('importFormatHelp').hidden=key!=='external'&&key!=='main';$('importFormat').value='legacy';$('remove').hidden=key==='settings'||key==='hub';
+ let r;
+ try{r=await api(t.path+(key==='hub'?'':'?site_key='+encodeURIComponent(site)))}
+ catch(error){if(epoch!==authEpoch||generation!==loadGeneration||key!==selected||site!==$('siteKey').value)return;if(!error.stale){$('list').textContent='加载记录失败，请点击“刷新列表”重试。';message('刷新记录失败：'+error.message,true)}return}
+ if(generation!==loadGeneration||key!==selected||site!==$('siteKey').value)return;
+ const d=r.data;rows=key==='hub'?[d]:key==='settings'?[d.site_config]:d.bindings||d.links||d[t.type]||[];
+ $('list').textContent=JSON.stringify(d,null,2);$('records').replaceChildren(new Option('新建记录',''));
+ rows.forEach((row,i)=>$('records').add(new Option(row.anchor_text||row.title||row.domain||row.site_name,String(i))));
+ loadedCollection=key;loadedSite=site;edit(key==='settings'||key==='hub'?rows[0]:null);editorReady(true);
+}
+async function tasks(){const r=await api('/lan/persist/jobs');$('tasks').textContent=JSON.stringify(r.data,null,2);updateFieldHelp('jobs');$('failedJobs').replaceChildren();for(const j of r.data.jobs||[])if(j.status==='failed')$('failedJobs').add(new Option(j.job_id,j.job_id))}
+async function safely(action){try{await action()}catch(e){if(!e.stale)message(e.message,true)}}
+function viewState(){return {epoch:authEpoch,generation:loadGeneration,key:selected,site:$('siteKey').value,editor:$('editor').value,importText:$('importText').value}}
+function sameView(v){return v.epoch===authEpoch&&v.generation===loadGeneration&&v.key===selected&&v.site===$('siteKey').value}
+async function mutate(path,method,body,label,validate){
+ const view=viewState(),token=view.epoch+':'+view.generation;
+ if(pendingWrites.has(token))throw Error('正在保存，请勿重复提交');
+ pendingWrites.add(token);editorReady(false);
+ try{
+  const r=await api(path,method,body);if(validate)validate(r);
+  if(!sameView(view))return;
+  if(view.editor!==$('editor').value||view.importText!==$('importText').value)return;
+  message(typeof label==='function'?label(r):label);await load();
+ }catch(error){if(sameView(view)&&!error.stale)throw error}
+ finally{pendingWrites.delete(token);if(sameView(view)&&loadedCollection===selected)editorReady(true)}
+}
+for(const [key,t] of Object.entries(tabs)){const b=document.createElement('button');b.textContent=t.title;b.onclick=()=>safely(async()=>{selected=key;await load()});$('tabs').append(b)}
+$('loginForm').onsubmit=e=>{e.preventDefault();safely(async()=>{authEpoch++;const form=new FormData(e.target);const r=await api('/session/login','POST',{username:form.get('username'),password:form.get('password')});csrf=r.data.csrf_token;e.target.reset();show(true);message('登录成功');await load();await tasks()})};
+$('logout').onclick=()=>safely(async()=>{show(false);await api('/session/logout','POST',{});csrf='';await session();message('已退出登录')});
+$('reload').onclick=()=>safely(load);$('siteKey').onchange=()=>safely(load);$('records').onchange=()=>edit($('records').value===''?null:rows[Number($('records').value)]);
+ $('save').onclick=()=>safely(async()=>{currentCollection();if(!activeRecord&&loadedSite!==$('siteKey').value)throw Error('创建记录前请先重新加载所选站点');const b=editable(JSON.parse($('editor').value));if(selected!=='hub')b.site_key=activeRecord?.site_key||$('siteKey').value;const method=selected==='settings'||selected==='hub'?'POST':activeRecord||b.id?'PUT':'POST';await mutate(tabs[selected].path,method,b,'保存成功')});
+$('remove').onclick=()=>safely(async()=>{currentCollection();if(!activeRecord)throw Error('请先选择一条记录');if(!activeRecord.site_key)throw Error('记录缺少站点标识，请刷新列表后重试');if(!confirm('确定删除这条记录吗？'))return;const b=selected==='languages'||selected==='images'?{domain:activeRecord.domain,site_key:activeRecord.site_key}:{ids:[activeRecord.id],type:tabs[selected].type,site_key:activeRecord.site_key};await mutate(tabs[selected].path,'DELETE',b,'删除成功',r=>{if(!r.data||r.data.deleted<1)throw Error('未删除任何记录，请刷新列表后重试')})});
+$('preview').onclick=()=>safely(async()=>{const r=await api('/external-links/preprocess','POST',{raw_text:$('importText').value,options:{defaults:{lang:'id'}}});$('previewResult').textContent=JSON.stringify(r.data,null,2);writeFieldHelp('previewHelp',fieldSets.import)});
+$('import').onclick=()=>safely(async()=>{currentCollection();if(loadedSite!==$('siteKey').value)throw Error('请先刷新所选站点后再导入');const t=tabs[selected];if($('strategy').value==='replace'&&!confirm('确定替换整个数据集合吗？'))return;let path='/sites/links/import',b={type:t.type,links:$('importText').value,strategy:$('strategy').value};if(selected==='domains'){path='/internal-domains/import';b={domains:$('importText').value,strategy:b.strategy}}else if(selected==='main'){path='/main-page-external-links/import';delete b.type}if(selected==='external'||selected==='main')b.format=$('importFormat').value||'legacy';b.site_key=$('siteKey').value;b.lang='id';if(selected==='external'&&$('date').value)b.effective_date=$('date').value;await mutate(path,'POST',b,r=>JSON.stringify(r.data))});
+$('queue').onclick=()=>safely(async()=>{await api('/lan/persist/jobs','POST',{});message('刷新任务已加入队列');await tasks()});$('refreshTasks').onclick=()=>safely(tasks);$('retry').onclick=()=>safely(async()=>{const id=$('failedJobs').value;if(!id)throw Error('请先选择一个失败任务');await api('/lan/persist/jobs/'+encodeURIComponent(id)+'/retry','POST',{});await tasks()});
+$('hubRead').onclick=()=>safely(async()=>{const r=await api('/hub/subdomains?domain='+encodeURIComponent($('hubDomain').value));$('hubPool').textContent=JSON.stringify(r.data,null,2);writeFieldHelp('hubPoolHelp',fieldSets.hub)});$('hubRefresh').onclick=()=>safely(async()=>{const r=await api('/hub/subdomains/refresh','POST',{domain:$('hubDomain').value,dsl:$('hubDSL').value,count:Number($('hubCount').value)});$('hubPool').textContent=JSON.stringify(r.data,null,2);writeFieldHelp('hubPoolHelp',fieldSets.hub);message('子域名列表已保存')});
+safely(session);setInterval(()=>{if(!$('workspace').hidden)safely(tasks)},10000);
+</script></body></html>{{end}}

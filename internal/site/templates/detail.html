@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="description" content="{{.App.Description}}">
+  <link rel="canonical" href="{{.Canonical}}">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="{{.App.Name}} APK untuk Android | {{.Config.DisplayName}}">
+  <meta property="og:description" content="{{.App.Description}}">
+  <meta property="og:url" content="{{.Canonical}}">
+  <meta property="og:image" content="{{requestImage .App.IconPath}}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{.App.Name}} APK untuk Android">
+  <meta name="twitter:description" content="{{.App.Description}}">
+  <meta name="twitter:image" content="{{requestImage .App.IconPath}}">
+  <title>{{.App.Name}} APK untuk Android | {{.Config.DisplayName}}</title>
+  <link rel="stylesheet" href="/assets/site.css">
+  <script type="application/ld+json">{
+    "@context":"https://schema.org",
+    "@type":"SoftwareApplication",
+    "name":{{json .App.Name}},
+    "applicationCategory":{{json .App.Category}},
+    "operatingSystem":"Android",
+    "softwareVersion":{{json .App.Version}},
+    "description":{{json .App.Description}},
+    "image":{{json (requestImage .App.IconPath)}},
+    "aggregateRating":{"@type":"AggregateRating","ratingValue":{{json .App.Rating}},"bestRating":"10","ratingCount":"1"}
+  }</script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="wordmark" href="/">APK<span>Hub</span></a>
+    <nav class="topnav" aria-label="Navigasi utama"><a class="topbar-label" href="/category/game/">Game Android</a><a class="topnav-link" href="/category/adventure/">Semua aplikasi</a></nav>
+  </header>
+  <main class="page-width detail-page">
+    <nav class="breadcrumbs" aria-label="Navigasi halaman"><a href="/">Beranda</a><span>/</span><a href="/category/game/">Game</a><span>/</span><a href="/category/adventure/">Adventure</a><span>/</span><strong>{{.App.Name}}</strong></nav>
+    <div class="detail-grid">
+      <div class="detail-main">
+        <section class="app-hero">
+          <img class="hero-icon" src="/assets/{{.App.IconPath}}" alt="Ikon {{.App.Name}}" width="104" height="104">
+          <div class="hero-copy">
+            <p class="eyebrow">{{.App.Category}}</p>
+            <h1>{{.App.Name}}</h1>
+            <a class="developer-link" href="#apk-info">{{.App.Developer}}</a>
+            <p class="version-line">Versi {{.App.Version}} <span aria-hidden="true">·</span> Android</p>
+          </div>
+          <div class="hero-rating"><strong>★ {{.App.Rating}}</strong><span>Rating pengguna</span></div>
+          <div class="hero-action"><a class="primary-action" href="#apk-info">Unduh APK <span aria-hidden="true">↓</span></a><small>{{.App.Downloads}} unduhan</small></div>
+        </section>
+
+        <section class="content-section">
+          <div class="section-title"><h2>Tangkapan layar</h2><span>{{len .App.Screenshots}} gambar lokal</span></div>
+          <div class="screenshots">{{range .App.Screenshots}}<img src="/assets/{{.LocalPath}}" alt="Tangkapan layar {{$.App.Name}}" loading="lazy">{{end}}</div>
+        </section>
+
+        <section class="content-section about-section">
+          <div class="section-title"><h2>Tentang aplikasi ini</h2><span>Bahasa Indonesia</span></div>
+          <p>{{.App.Description}}</p>
+          <div class="tag-row"><span class="tag">{{.App.Category}}</span><span class="tag">Android</span><span class="tag">{{.App.Developer}}</span></div>
+        </section>
+
+        <section class="content-section info-section">
+          <div class="section-title"><h2>Informasi terbaru</h2><span>Diperbarui {{.App.CapturedAt.Format "02 Jan 2006"}}</span></div>
+          <dl class="info-table">
+            <div><dt>Versi terbaru</dt><dd>{{.App.Version}}</dd></div>
+            <div><dt>Nama paket</dt><dd>{{.App.PackageName}}</dd></div>
+            <div><dt>Pengembang</dt><dd>{{.App.Developer}}</dd></div>
+            <div><dt>Kategori</dt><dd>{{.App.Category}}</dd></div>
+            <div><dt>Ukuran</dt><dd>Belum tersedia</dd></div>
+            <div><dt>Bahasa halaman</dt><dd>Bahasa Indonesia</dd></div>
+          </dl>
+        </section>
+
+        <section id="apk-info" class="content-section apk-info-section">
+          <div class="section-title"><h2>Informasi APK</h2><span>Periksa sebelum mengunduh</span></div>
+          <div class="notice"><strong>Informasi file</strong><p>Halaman ini hanya menyajikan informasi aplikasi. Berkas APK tidak disimpan atau diproksikan oleh prototipe Go ini.</p></div>
+          <dl class="info-table compact-table">
+            <div><dt>Nama aplikasi</dt><dd>{{.App.Name}}</dd></div>
+            <div><dt>Versi</dt><dd>{{.App.Version}}</dd></div>
+            <div><dt>Package ID</dt><dd>{{.App.PackageName}}</dd></div>
+          </dl>
+          <a class="primary-action inline-action" href="#apk-info">Lanjut ke informasi APK <span aria-hidden="true">↓</span></a>
+        </section>
+
+        {{if .KeywordChips}}
+        <section class="content-section keyword-section" aria-label="Kata kunci terkait">
+          <div class="section-title"><h2>{{.KeywordBrand}} APK</h2><span>Kata kunci terkait</span></div>
+          <div class="tag-row">{{range .KeywordChips}}<a class="tag" href="{{$.KeywordURL}}">{{.}}</a>{{end}}</div>
+        </section>
+        {{end}}
+
+        {{if .ExternalLinks}}
+        <section class="content-section link-panel detail-links" aria-labelledby="detail-links-title">
+          <div class="section-title"><h2 id="detail-links-title">Tautan terkait</h2><span>{{len .ExternalLinks}} tautan eksternal</span></div>
+          <div class="link-buttons">{{range .ExternalLinks}}<a class="link-button" {{$.AbsoluteHref .TargetURL}} rel="noopener" target="_blank">{{.AnchorText}}<span aria-hidden="true">↗</span></a>{{end}}</div>
+        </section>
+        {{end}}
+
+        <section class="content-section faq-section"><div class="section-title"><h2>Pertanyaan umum</h2><span>FAQ</span></div><details open><summary>Apakah APK tersedia di halaman ini?</summary><p>Belum. Prototipe ini menyimpan metadata dan gambar lokal untuk pengujian, tetapi tidak mengumpulkan atau menyimpan APK.</p></details><details><summary>Apakah gambar dimuat dari sumber eksternal?</summary><p>Tidak. Gambar contoh disimpan di server lokal dan disajikan melalui jalur <code>/assets</code>.</p></details></section>
+      </div>
+      <aside class="detail-aside">
+        <div class="aside-app"><img src="/assets/{{.App.IconPath}}" alt="" width="48" height="48"><div><strong>{{.App.Name}}</strong><span>Versi {{.App.Version}}</span></div></div>
+        <a class="primary-action aside-action" href="#apk-info">Unduh APK <span aria-hidden="true">↓</span></a>
+        <div class="aside-meta"><span>Pengembang</span><strong>{{.App.Developer}}</strong><span>Rating</span><strong>★ {{.App.Rating}}</strong><span>Downloads</span><strong>{{.App.Downloads}}</strong></div>
+        <div class="aside-links"><p>Jelajahi</p><a href="/">Semua aplikasi</a><a href="/category/game/">Game</a><a href="/category/adventure/">Adventure</a></div>
+      </aside>
+    </div>
+  </main>
+  <footer class="site-footer"><div class="page-width"><span>© 2026 {{.Config.DisplayName}}</span><a href="/">Beranda</a><a href="/category/game/">Game</a><a href="/category/adventure/">Adventure</a></div></footer>
+</body>
+</html>

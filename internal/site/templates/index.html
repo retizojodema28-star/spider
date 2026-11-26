@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="description" content="Koleksi game Android dengan informasi versi, pengembang, rating, dan tautan terkait.">
+  <link rel="canonical" href="{{.Canonical}}">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Game Android | {{.Config.DisplayName}}">
+  <meta property="og:description" content="Koleksi game Android dan informasi aplikasi.">
+  <meta property="og:url" content="{{.Canonical}}">
+  <title>{{if .Title}}{{.Title}}{{else}}Game Android | {{.Config.DisplayName}}{{end}}</title>
+  <link rel="stylesheet" href="/assets/site.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="wordmark" href="/">APK<span>Hub</span></a>
+    <nav class="topnav" aria-label="Navigasi utama">
+      <a class="topbar-label" href="/category/game/">Game Android</a>
+      <a class="topnav-link" href="/category/adventure/">Adventure</a>
+      {{range .NavigationLinks}}<a class="topnav-link" {{$.Href .TargetURL}}>{{.AnchorText}}</a>{{end}}
+    </nav>
+  </header>
+  <main class="page-width"{{if .PageType}} data-core-page-type="{{.PageType}}"{{end}}>
+    <div class="page-heading">
+      <div>
+        <p class="eyebrow">Koleksi aplikasi</p>
+        <h1>{{if .Title}}{{.Title}}{{else}}Game Android{{end}}</h1>
+        {{range .Paragraphs}}<p class="heading-description">{{.}}</p>{{else}}<p class="heading-description">Temukan game populer, lihat detail versi terbaru, dan jelajahi rekomendasi terkait.</p>{{end}}
+      </div>
+      <span class="item-count">{{len .Apps}} aplikasi</span>
+    </div>
+    <section class="app-list" aria-label="Daftar aplikasi">
+      {{range .Apps}}
+      <article class="app-row">
+        <a class="app-icon-link" href="/__preview/apps/{{.Slug}}" aria-label="Lihat {{.Name}}">
+          <img class="app-icon" src="/assets/{{.IconPath}}" alt="Ikon {{.Name}}" width="72" height="72">
+        </a>
+        <div class="app-row-copy">
+          <h2><a href="/__preview/apps/{{.Slug}}">{{.Name}}</a></h2>
+          <p>{{.Developer}} <span aria-hidden="true">·</span> {{.Category}}</p>
+          <div class="app-row-meta"><span class="rating">★ {{.Rating}}</span><span>{{.Downloads}} unduhan</span><span>Versi {{.Version}}</span></div>
+        </div>
+        <a class="row-action" href="/__preview/apps/{{.Slug}}">Lihat aplikasi <span aria-hidden="true">›</span></a>
+      </article>
+      {{end}}
+    </section>
+
+    <section class="link-panel" aria-labelledby="explore-links-title">
+      <div class="section-title"><h2 id="explore-links-title">Jelajahi lebih banyak</h2><span>Tautan terkelola</span></div>
+      <div class="link-columns">
+        <div>
+          <p class="link-group-label">Tautan internal</p>
+          <ul class="link-list">
+            {{range .InternalLinks}}<li><a {{$.Href .TargetURL}}>{{.AnchorText}}</a><span>{{.Category}}</span></li>{{end}}
+          </ul>
+        </div>
+        <div>
+          <p class="link-group-label">Referensi eksternal</p>
+          <ul class="link-list">
+            {{range .ExternalLinks}}<li><a {{$.AbsoluteHref .TargetURL}} rel="noopener" target="_blank">{{.AnchorText}} <span aria-hidden="true">↗</span></a><span>{{.Category}}</span></li>{{end}}
+          </ul>
+        </div>
+      </div>
+    </section>
+    <p class="sample-note">Data dan gambar contoh untuk pengujian lokal. Berkas APK tidak disimpan oleh prototipe ini.</p>
+  </main>
+  <footer class="site-footer"><div class="page-width"><span>© 2026 {{.Config.DisplayName}}</span><a href="/">Beranda</a><a href="/category/game/">Game</a><a href="/category/adventure/">Adventure</a></div></footer>
+</body>
+</html>

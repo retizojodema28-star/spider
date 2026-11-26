@@ -1,0 +1,87 @@
+name: apk-html-go
+
+x-app-env: &app-env
+  APP_ENV: ${APP_ENV:-production}
+  GIN_MODE: release
+  DATABASE_DSN: apkhtml:${MYSQL_PASSWORD:?Run python3 scripts/prepare-env.py first}@tcp(mysql:3306)/apkhtml?charset=utf8mb4&parseTime=True&loc=UTC&timeout=5s&readTimeout=10s&writeTimeout=10s
+  LANGUAGE_DATA_DIR: /app/data/lan
+  ASSET_DIR: /app/assets
+
+services:
+  web:
+    image: apk-html-go-web:latest
+    build:
+      context: ../../
+      dockerfile: build/docker/site.Dockerfile
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    environment:
+      <<: *app-env
+      PORT: "8080"
+      ADMIN_USERNAME: ${ADMIN_USERNAME:?Set ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD}
+      ADMIN_ORIGIN: ${ADMIN_ORIGIN:-}
+      SEED_FILE: /app/data/seed/apps.json
+    volumes:
+      - ../../data/lan:/app/data/lan:ro
+      - ../../assets:/app/assets:ro
+    ports:
+      - "127.0.0.1:${APP_PORT:-18082}:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      # DB/runtime readiness alone cannot detect a stalled host asset bind mount.
+      test: ["CMD-SHELL", "wget -q -T 2 -O /dev/null http://127.0.0.1:8080/healthz && wget -q -T 2 -O /dev/null http://127.0.0.1:8080/assets/site.css"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    stop_grace_period: 15s
+
+  worker:
+    image: apk-html-go-web:latest
+    entrypoint: ["/app/worker"]
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    environment:
+      <<: *app-env
+      WORKER_HEALTH_PORT: "8081"
+    volumes:
+      - ../../data/lan:/app/data/lan:ro
+      - ../../assets:/app/assets:ro
+    depends_on:
+      web:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8081/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    stop_grace_period: 15s
+
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: apkhtml
+      MYSQL_USER: apkhtml
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD}
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_0900_ai_ci"]
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+
+volumes:
+  mysql_data:

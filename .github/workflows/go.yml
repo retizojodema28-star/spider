@@ -1,0 +1,32 @@
+name: APK HTML Go
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Download and verify dependencies
+        run: |
+          go mod download
+          go mod verify
+      - name: Check every retained package
+        run: make vet cover
+      - name: Build production commands
+        run: CGO_ENABLED=0 make build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apk-html-go
+          path: |
+            _output/bin/
+            _output/coverage.out
