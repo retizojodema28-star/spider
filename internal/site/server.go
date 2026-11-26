@@ -227,6 +227,15 @@ func NewRouterWithRuntime(runtime *Runtime, opts RouterOptions) *gin.Engine {
 		snapshot.ShowExternalPanel = cfg.ShowExternalPanel
 		hubPage, hubErr := BuildHubPage(c.Request, cfg, snapshot, s.Hub)
 		if hubErr == nil {
+			if recommendationEnabled(c.Request) && opts.RecommendationFeed != nil {
+				fragment, feedErr := opts.RecommendationFeed.Fetch(c.Request.Context(), hubPage.Domain, recommendationRequestPath(c.Request))
+				if feedErr != nil {
+					log.Printf("hub recommendation feed skipped: %v", feedErr)
+				} else if fragment != "" {
+					hubPage.RecommendedHeading = recommendationHeading(hubPage.Language)
+					hubPage.RecommendedHTML = fragment
+				}
+			}
 			c.Header("X-Runtime-Revision", strconv.FormatUint(s.Revision, 10))
 			renderer.render(c, "hub.html", hubPage)
 			return

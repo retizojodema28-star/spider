@@ -21,21 +21,24 @@ type HubSnapshot struct {
 	ActiveDate          string
 	MissingDateStrategy string // "nearest", otherwise PHP's "latest"
 	ImageBaseURL        string // deprecated: ignored; images use indexed local site assets
+	TierCounts          map[string][2]int
 }
 
 type HubExternalRecord struct {
-	ID         int    `json:"id"`
-	Domain     string `json:"domain"`
-	AnchorText string `json:"anchor_text"`
-	TargetURL  string `json:"target_url"`
-	Weight     int    `json:"weight"`
-	Enabled    bool   `json:"enabled"`
+	ID            int    `json:"id"`
+	Domain        string `json:"domain"`
+	AnchorText    string `json:"anchor_text"`
+	TargetURL     string `json:"target_url"`
+	RecommendTier int    `json:"recommend_tier"`
+	Weight        int    `json:"weight"`
+	Enabled       bool   `json:"enabled"`
 }
 
 type HubLink struct {
-	Anchor string `json:"anchor"`
-	URL    string `json:"url"`
-	Domain string `json:"domain,omitempty"`
+	Anchor        string `json:"anchor"`
+	URL           string `json:"url"`
+	Domain        string `json:"domain,omitempty"`
+	RecommendTier int    `json:"recommend_tier,omitempty"`
 }
 
 func (l HubLink) Href() template.HTMLAttr { return legacyHref(l.URL) }
@@ -224,7 +227,28 @@ func hubExternalCount(hash string, minCount, maxCount, poolSize int) int {
 	return minCount + int(hubHex(hash, 0, 8)%uint64(upper-minCount+1))
 }
 
-func (s HubSnapshot) selectSnapshot(date, hash string, needed int) []HubLink {
+func normalizedRecommendTier(tier int) int {
+	if tier == 1 {
+		return 1
+	}
+	return 0
+}
+
+func (s HubSnapshot) tierCounts(date string) [2]int {
+	if counts, ok := s.TierCounts[date]; ok {
+		return counts
+	}
+	var counts [2]int
+	maxID := s.SnapshotMaxIDs[date]
+	for id, record := range s.ExternalRecords {
+		if id <= maxID && record.Enabled && hubHTTP.MatchString(record.TargetURL) {
+			counts[normalizedRecommendTier(record.RecommendTier)]++
+		}
+	}
+	return counts
+}
+
+func (s HubSnapshot) selectSnapshotTier(date, hash string, needed, tier int) []HubLink {
 	maxID := s.SnapshotMaxIDs[date]
 	out := []HubLink{}
 	if needed <= 0 || maxID <= 0 {
@@ -238,7 +262,7 @@ func (s HubSnapshot) selectSnapshot(date, hash string, needed int) []HubLink {
 		}
 		seen[id] = true
 		r, ok := s.ExternalRecords[id]
-		if !ok || !r.Enabled || !hubHTTP.MatchString(r.TargetURL) {
+		if !ok || !r.Enabled || !hubHTTP.MatchString(r.TargetURL) || normalizedRecommendTier(r.RecommendTier) != tier {
 			return
 		}
 		r.ID = id
@@ -271,19 +295,19 @@ func (s HubSnapshot) selectSnapshot(date, hash string, needed int) []HubLink {
 		return selected[i].Weight > selected[j].Weight
 	})
 	for _, r := range selected {
-		out = append(out, HubLink{r.AnchorText, r.TargetURL, r.Domain})
+		out = append(out, HubLink{Anchor: r.AnchorText, URL: r.TargetURL, Domain: r.Domain, RecommendTier: normalizedRecommendTier(r.RecommendTier)})
 	}
 	return out
 }
 
-func hubSelectLinks(hash, date, today string, cfg HubConfig, legacy LegacySnapshot, s HubSnapshot) (left, bottom []HubLink, snapshotDate string, poolSize int) {
+func hubSelectLinks(hash, date, today string, cfg HubConfig, legacy LegacySnapshot, s HubSnapshot) (left, recommended, bottom []HubLink, snapshotDate string, poolSize int) {
 	resolved := s.resolveDate(date, today)
 	poolSize = s.SnapshotMaxIDs[resolved]
-	var links []HubLink
-	if poolSize > 0 {
+	fromSnapshot := poolSize > 0
+	primaryLinks, recommendedLinks := []HubLink{}, []HubLink{}
+	var tierRows [2][]LegacyManagedLink
+	if fromSnapshot {
 		snapshotDate = resolved
-		count := hubExternalCount(hash+"|"+resolved, cfg.ExternalMin, cfg.ExternalMax, poolSize)
-		links = s.selectSnapshot(resolved, hash, min(poolSize, count+cfg.BottomLinkCount))
 	} else {
 		rows := append([]LegacyManagedLink(nil), legacy.ExternalLinks...)
 		if legacy.ExternalLinks == nil {
@@ -299,44 +323,90 @@ func hubSelectLinks(hash, date, today string, cfg HubConfig, legacy LegacySnapsh
 		for _, r := range rows {
 			if hubHTTP.MatchString(r.TargetURL) {
 				valid = append(valid, r)
+				tierRows[normalizedRecommendTier(r.RecommendTier)] = append(tierRows[normalizedRecommendTier(r.RecommendTier)], r)
 			}
-		}
-		score := func(r LegacyManagedLink) uint64 {
-			return hubHex(sha1Hex(hash+"|"+r.TargetURL+"|"+r.Domain), 0, 12)*1001 + uint64(max(0, min(1000, r.Weight)))
-		}
-		sort.SliceStable(valid, func(i, j int) bool {
-			a, b := score(valid[i]), score(valid[j])
-			if a != b {
-				return a > b
-			}
-			return valid[i].TargetURL < valid[j].TargetURL
-		})
-		for _, r := range valid {
-			links = append(links, HubLink{r.AnchorText, r.TargetURL, r.Domain})
 		}
 		poolSize = len(valid)
 	}
-	for i := range links {
-		if !hubTestAnchor.MatchString(legacyTrim(links[i].Anchor)) {
+	countHash := hash
+	if snapshotDate != "" {
+		countHash += "|" + snapshotDate
+	}
+	n := min(poolSize, hubExternalCount(countHash, cfg.ExternalMin, cfg.ExternalMax, poolSize))
+	totalTarget := min(poolSize, n+cfg.BottomLinkCount)
+	var primaryCount, recommendedCount int
+	if fromSnapshot {
+		counts := s.tierCounts(resolved)
+		primaryCount, recommendedCount = counts[0], counts[1]
+	} else {
+		primaryCount, recommendedCount = len(tierRows[0]), len(tierRows[1])
+	}
+	primaryTarget, recommendedTarget := totalTarget, 0
+	if primaryCount > 0 && recommendedCount > 0 {
+		primaryTarget = min((n+1)/2, primaryCount)
+		recommendedTarget = min(totalTarget-primaryTarget, recommendedCount)
+	} else if primaryCount == 0 {
+		primaryTarget = 0
+		recommendedTarget = min(totalTarget, recommendedCount)
+	} else {
+		primaryTarget = min(totalTarget, primaryCount)
+	}
+	if fromSnapshot {
+		primaryLinks = s.selectSnapshotTier(resolved, hash+"|primary", primaryTarget, 0)
+		recommendedLinks = s.selectSnapshotTier(resolved, hash+"|recommended", recommendedTarget, 1)
+	} else {
+		selectLegacy := func(rows []LegacyManagedLink, salt string, count int) []HubLink {
+			sort.SliceStable(rows, func(i, j int) bool {
+				score := func(r LegacyManagedLink) uint64 {
+					return hubHex(sha1Hex(hash+"|"+salt+"|"+r.TargetURL+"|"+r.Domain), 0, 12)*1001 + uint64(max(0, min(1000, r.Weight)))
+				}
+				a, b := score(rows[i]), score(rows[j])
+				if a != b {
+					return a > b
+				}
+				return rows[i].TargetURL < rows[j].TargetURL
+			})
+			out := make([]HubLink, 0, min(count, len(rows)))
+			for _, r := range rows[:min(count, len(rows))] {
+				out = append(out, HubLink{Anchor: r.AnchorText, URL: r.TargetURL, Domain: r.Domain, RecommendTier: normalizedRecommendTier(r.RecommendTier)})
+			}
+			return out
+		}
+		primaryLinks = selectLegacy(tierRows[0], "primary", primaryTarget)
+		recommendedLinks = selectLegacy(tierRows[1], "recommended", recommendedTarget)
+	}
+	allLinks := append(append([]HubLink{}, primaryLinks...), recommendedLinks...)
+	for i := range allLinks {
+		if !hubTestAnchor.MatchString(legacyTrim(allLinks[i].Anchor)) {
 			continue
 		}
-		d := legacyTrim(links[i].Domain)
+		d := legacyTrim(allLinks[i].Domain)
 		if d == "" {
-			if u, e := url.Parse(links[i].URL); e == nil {
+			if u, e := url.Parse(allLinks[i].URL); e == nil {
 				d = u.Hostname()
 			}
 		}
 		if d == "" {
 			d = "external resource"
 		}
-		links[i].Anchor = d
+		allLinks[i].Anchor = d
 	}
-	countHash := hash
-	if snapshotDate != "" {
-		countHash += "|" + snapshotDate
+	primaryLinks = allLinks[:len(primaryLinks)]
+	recommendedLinks = allLinks[len(primaryLinks):]
+	bottomSource := recommendedLinks
+	if len(bottomSource) == 0 {
+		bottomSource = primaryLinks
 	}
-	n := min(len(links), hubExternalCount(countHash, cfg.ExternalMin, cfg.ExternalMax, poolSize))
-	left = append([]HubLink{}, links[:n]...)
-	bottom = append([]HubLink{}, links[n:min(len(links), n+cfg.BottomLinkCount)]...)
+	bottomN := min(cfg.BottomLinkCount, len(bottomSource))
+	if bottomN > 0 {
+		bottom = append([]HubLink{}, bottomSource[len(bottomSource)-bottomN:]...)
+		if len(recommendedLinks) > 0 {
+			recommendedLinks = recommendedLinks[:len(recommendedLinks)-bottomN]
+		} else {
+			primaryLinks = primaryLinks[:len(primaryLinks)-bottomN]
+		}
+	}
+	left = primaryLinks
+	recommended = recommendedLinks
 	return
 }

@@ -52,7 +52,7 @@ type HubPage struct {
 	PoolSize                                          int
 	Subdomains                                        []HubSubdomain
 	DateNavigation                                    []HubDateGroup
-	LeftLinks, BottomLinks                            []HubLink
+	LeftLinks, RecommendedExternalLinks, BottomLinks  []HubLink
 	ArticleBlocks, LeadArticles, RestArticles         []HubArticle
 	ResourceCards                                     []HubResource
 	FAQ                                               []LegacyFAQ
@@ -61,6 +61,8 @@ type HubPage struct {
 	Images                                            HubImages
 	Alternates                                        []HubAlternate
 	JSONLD                                            []template.JS
+	RecommendedHeading                                string
+	RecommendedHTML                                   template.HTML
 }
 
 func (p HubPage) Href(u string) template.HTMLAttr {
@@ -191,14 +193,14 @@ func buildHubPage(scheme, domain, path, lang, hash, brand, date string, now time
 		p.Alternates = append(p.Alternates, HubAlternate{language, hubPageURL(scheme, domain, path, target)})
 	}
 	today := now.Format("2006-01-02")
-	p.LeftLinks, p.BottomLinks, p.SnapshotDate, p.PoolSize = hubSelectLinks(hash, date, today, cfg, legacy, snapshot)
+	p.LeftLinks, p.RecommendedExternalLinks, p.BottomLinks, p.SnapshotDate, p.PoolSize = hubSelectLinks(hash, date, today, cfg, legacy, snapshot)
 	p.Subdomains = HubSubdomainNavigation(domain, cfg.SubdomainCount, hash, snapshot.Subdomains[NormalizeHubDomain(domain)])
 	p.NavigationDate = NormalizeHubDate(date)
 	if p.NavigationDate == "" {
 		p.NavigationDate = today
 	}
 	p.DateNavigation = HubDateNavigation(scheme, domain, lang, p.NavigationDate, cfg.DateNavNumMax, hash)
-	all := append(append([]HubLink{}, p.LeftLinks...), p.BottomLinks...)
+	all := append(append(append([]HubLink{}, p.LeftLinks...), p.RecommendedExternalLinks...), p.BottomLinks...)
 	replace := strings.NewReplacer("{brand}", brand, "{year}", now.Format("2006"), "{count}", fmt.Sprint(len(all)+len(p.Subdomains)))
 	if len(copy.Intro) > 0 {
 		p.IntroText = replace.Replace(copy.Intro[int(hubHex(hash, 24, 8)%uint64(len(copy.Intro)))])

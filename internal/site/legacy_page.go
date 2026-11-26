@@ -48,18 +48,19 @@ type LegacySnapshot struct {
 // the original object's field order for SHA1 sorting when importing PHP data;
 // a Go map would sort the keys and silently change the selected links.
 type LegacyManagedLink struct {
-	ID         uint            `json:"id"`
-	Domain     string          `json:"domain"`
-	Title      string          `json:"title,omitempty"`
-	Path       string          `json:"path,omitempty"`
-	Language   string          `json:"lang"`
-	AnchorText string          `json:"anchor_text,omitempty"`
-	TargetURL  string          `json:"target_url,omitempty"`
-	Category   string          `json:"category"`
-	Weight     int             `json:"weight"`
-	Enabled    bool            `json:"enabled"`
-	Remark     string          `json:"remark"`
-	PHPJSON    json.RawMessage `json:"-"`
+	ID            uint            `json:"id"`
+	Domain        string          `json:"domain"`
+	Title         string          `json:"title,omitempty"`
+	Path          string          `json:"path,omitempty"`
+	Language      string          `json:"lang"`
+	AnchorText    string          `json:"anchor_text,omitempty"`
+	TargetURL     string          `json:"target_url,omitempty"`
+	Category      string          `json:"category"`
+	RecommendTier int             `json:"recommend_tier"`
+	Weight        int             `json:"weight"`
+	Enabled       bool            `json:"enabled"`
+	Remark        string          `json:"remark"`
+	PHPJSON       json.RawMessage `json:"-"`
 }
 
 type LegacyLink struct {
@@ -163,35 +164,35 @@ type LegacyImages struct {
 }
 
 type LegacyPage struct {
-	StatusCode                                                                            int
-	Config                                                                                SiteConfig
-	Host, EntryHost, RequestHost, Scheme, RequestURI, HashURI                             string
-	NormalizedPath, ContentPath, DisplayPath, RoutePrefix                                 string
-	RequestedLanguage, Language, PageType, Hash, ContentHash                              string
-	HomeFallback, HubRoute, Preview                                                       bool
-	Title, Brand, Description                                                             string
-	Keywords, Paragraphs                                                                  []string
-	FAQ                                                                                   []LegacyFAQ
-	Canonical, RawCanonical, BaseURL, SEOBaseURL                                          string
-	HomeURL, SEOHomeURL, GameURL, CategoryURL, KeywordURL                                 string
-	Navigation, RelatedLinks, ListLinks, SubdomainLinks, ExternalLinks, MainExternalLinks []LegacyLink
-	KeywordChips                                                                          []string
-	SocialLinks, LegalLinks                                                               []LegacyLink
-	FooterGroups                                                                          []LegacyLinkGroup
-	ShowListPanel, ShowSubdomainPanel, ShowExternalPanel                                  bool
-	Labels                                                                                map[string]string
-	Images                                                                                LegacyImages
-	Version, FileSize, PackageName, SHA256                                                string
-	OldVersions                                                                           []LegacyVersion
-	Info                                                                                  []LegacyField
-	UpdatedDate, UpdatedISO, Year                                                         string
-	RatingValue                                                                           float64
-	RatingText                                                                            string
-	RatingCount                                                                           int
-	DisplayTitle, SEOKeywords, OGLocale, Robots                                           string
-	JSONLD                                                                                []template.JS
-	RecommendedHeading                                                                    string
-	RecommendedHTML                                                                       template.HTML
+	StatusCode                                                                                                      int
+	Config                                                                                                          SiteConfig
+	Host, EntryHost, RequestHost, Scheme, RequestURI, HashURI                                                       string
+	NormalizedPath, ContentPath, DisplayPath, RoutePrefix                                                           string
+	RequestedLanguage, Language, PageType, Hash, ContentHash                                                        string
+	HomeFallback, HubRoute, Preview                                                                                 bool
+	Title, Brand, Description                                                                                       string
+	Keywords, Paragraphs                                                                                            []string
+	FAQ                                                                                                             []LegacyFAQ
+	Canonical, RawCanonical, BaseURL, SEOBaseURL                                                                    string
+	HomeURL, SEOHomeURL, GameURL, CategoryURL, KeywordURL                                                           string
+	Navigation, RelatedLinks, ListLinks, SubdomainLinks, ExternalLinks, RecommendedExternalLinks, MainExternalLinks []LegacyLink
+	KeywordChips                                                                                                    []string
+	SocialLinks, LegalLinks                                                                                         []LegacyLink
+	FooterGroups                                                                                                    []LegacyLinkGroup
+	ShowListPanel, ShowSubdomainPanel, ShowExternalPanel                                                            bool
+	Labels                                                                                                          map[string]string
+	Images                                                                                                          LegacyImages
+	Version, FileSize, PackageName, SHA256                                                                          string
+	OldVersions                                                                                                     []LegacyVersion
+	Info                                                                                                            []LegacyField
+	UpdatedDate, UpdatedISO, Year                                                                                   string
+	RatingValue                                                                                                     float64
+	RatingText                                                                                                      string
+	RatingCount                                                                                                     int
+	DisplayTitle, SEOKeywords, OGLocale, Robots                                                                     string
+	JSONLD                                                                                                          []template.JS
+	RecommendedHeading                                                                                              string
+	RecommendedHTML                                                                                                 template.HTML
 }
 
 // BuildLegacyPage ports the default ApkDetailRenderer/SeoRenderer pipeline.

@@ -250,14 +250,23 @@ func TestAdminSettingsBindingsAndLocalImages(t *testing.T) {
 func TestAdminLinksImportRollbackAndPreprocess(t *testing.T) {
 	h := newAdminHarness(t, nil)
 	h.login()
-	created := h.call("POST", "/admin/api/external-links", map[string]any{"anchor_text": "Original", "target_url": "https://example.com/", "enabled": false, "weight": 0}, 200)
+	created := h.call("POST", "/admin/api/external-links", map[string]any{"anchor_text": "Original", "target_url": "https://example.com/", "recommend_tier": 1, "enabled": false, "weight": 0}, 200)
 	id := created["data"].(map[string]any)["link"].(map[string]any)["id"]
 	var link SiteLink
 	h.db.First(&link)
-	if link.Enabled || link.Weight != 0 || link.Language != "id" {
+	if link.Enabled || link.Weight != 0 || link.Language != "id" || link.RecommendTier != 1 {
 		t.Fatalf("defaults overrode explicit values: %+v", link)
 	}
-	h.call("PUT", "/admin/api/external-links", map[string]any{"id": id, "anchor_text": "Changed", "target_url": "https://example.com/new", "enabled": true}, 200)
+	h.call("PUT", "/admin/api/external-links", map[string]any{"id": id, "anchor_text": "Changed", "target_url": "https://example.com/new", "recommend_tier": 0, "enabled": true}, 200)
+	h.db.First(&link, link.ID)
+	if link.RecommendTier != 0 {
+		t.Fatalf("recommend tier was not updated: %+v", link)
+	}
+	var snapshotRecord RuntimeExternalRecord
+	if err := h.db.Where("link_id = ?", link.ID).First(&snapshotRecord).Error; err != nil || snapshotRecord.RecommendTier != 0 {
+		t.Fatalf("snapshot recommend tier was not updated: %+v err=%v", snapshotRecord, err)
+	}
+	h.call("POST", "/admin/api/external-links", map[string]any{"anchor_text": "Bad tier", "target_url": "https://tier.test/", "recommend_tier": 2}, 422)
 	before := h.rt.Snapshot().Revision
 	h.call("POST", "/admin/api/sites/links/import", map[string]any{"type": "external", "strategy": "replace", "links": "https://good.test/,Good\njavascript:alert(1),Bad"}, 422)
 	if h.rt.Snapshot().Revision != before || h.rt.Snapshot().Links[0].AnchorText != "Changed" {
@@ -283,6 +292,16 @@ func TestAdminLinksImportRollbackAndPreprocess(t *testing.T) {
 	h.call("POST", "/admin/api/sites/links", map[string]any{"type": "internal", "target_url": "/apps/next", "anchor_text": "Next"}, 200)
 	for _, bad := range []string{"//attacker.test", "/%252e%252e/secret", "/a/../b", "https://user:secret@127.0.0.1/", "javascript:alert(1)"} {
 		h.call("POST", "/admin/api/sites/links", map[string]any{"type": "internal", "target_url": bad}, 422)
+	}
+}
+
+func TestNormalizedExternalImportSupportsRecommendTier(t *testing.T) {
+	rows, err := splitAdminImportFormat("global|id|Partner|https://partner.test/|demo|100|true|note|1", "normalized")
+	if err != nil || len(rows) != 1 || len(rows[0]) != 9 || rows[0][8] != "1" {
+		t.Fatalf("normalized tier import: rows=%#v err=%v", rows, err)
+	}
+	if _, err := splitAdminImportFormat("global|id|Partner|https://partner.test/|demo|100|true|note|2", "normalized"); err == nil {
+		t.Fatal("invalid recommend tier import accepted")
 	}
 }
 

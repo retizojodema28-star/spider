@@ -34,6 +34,7 @@ type RuntimeExternalRecord struct {
 	ID            uint   `gorm:"primaryKey;autoIncrement:false"`
 	LinkID        uint   `gorm:"index;not null"` // provenance only; duplicates are valid
 	FirstSeenDate string `gorm:"size:10;index"`
+	RecommendTier int    `gorm:"not null;default:0;index"`
 	Payload       string `gorm:"type:text"` // immutable normalized PHP import row
 }
 
@@ -92,6 +93,7 @@ func loadRuntimeHub(tx *gorm.DB, links []SiteLink) (HubSnapshot, error) {
 				return HubSnapshot{}, fmt.Errorf("invalid persisted external snapshot %d", rec.ID)
 			}
 			row.ID = int(rec.ID)
+			row.RecommendTier = rec.RecommendTier
 			hub.ExternalRecords[int(rec.ID)] = row
 			continue
 		}
@@ -101,7 +103,17 @@ func loadRuntimeHub(tx *gorm.DB, links []SiteLink) (HubSnapshot, error) {
 		if !ok || l.Kind != "external" {
 			continue
 		}
-		hub.ExternalRecords[int(rec.ID)] = HubExternalRecord{ID: int(rec.ID), Domain: l.Domain, AnchorText: l.AnchorText, TargetURL: l.TargetURL, Weight: l.Weight, Enabled: l.Enabled}
+		hub.ExternalRecords[int(rec.ID)] = HubExternalRecord{ID: int(rec.ID), Domain: l.Domain, AnchorText: l.AnchorText, TargetURL: l.TargetURL, RecommendTier: l.RecommendTier, Weight: l.Weight, Enabled: l.Enabled}
+	}
+	hub.TierCounts = map[string][2]int{}
+	for date, maxID := range hub.SnapshotMaxIDs {
+		var counts [2]int
+		for id, record := range hub.ExternalRecords {
+			if id <= maxID && record.Enabled && hubHTTP.MatchString(record.TargetURL) {
+				counts[normalizedRecommendTier(record.RecommendTier)]++
+			}
+		}
+		hub.TierCounts[date] = counts
 	}
 	return hub, nil
 }
@@ -120,7 +132,7 @@ func appendRuntimeExternal(tx *gorm.DB, links []SiteLink, date, source string) e
 	rows := make([]RuntimeExternalRecord, 0, len(links))
 	for _, l := range links {
 		state.NextExternalID++
-		rows = append(rows, RuntimeExternalRecord{ID: state.NextExternalID, LinkID: l.ID, FirstSeenDate: date, Payload: runtimePHPLinkJSON(l, source, state.NextExternalID)})
+		rows = append(rows, RuntimeExternalRecord{ID: state.NextExternalID, LinkID: l.ID, FirstSeenDate: date, RecommendTier: l.RecommendTier, Payload: runtimePHPLinkJSON(l, source, state.NextExternalID)})
 	}
 	state.ActiveDate = date
 	if err := tx.Save(&state).Error; err != nil {

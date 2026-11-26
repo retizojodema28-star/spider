@@ -93,6 +93,32 @@ func TestRecommendationFeedRejectsNonHTTPURLsAndDifferentHostRedirects(t *testin
 	}
 }
 
+func TestHubRecommendationFeedUsesSameFixedEndpoint(t *testing.T) {
+	var gotDomain, gotPath string
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotDomain, gotPath = r.URL.Query().Get("domain"), r.URL.Query().Get("path")
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		fmt.Fprint(w, `<h2>Hub Recommendation</h2><a href="https://partner.example/hub">Partner</a>`)
+	}))
+	defer upstream.Close()
+	feed, err := NewRecommendationFeed(upstream.URL+"/feed.php", upstream.Client())
+	if err != nil {
+		t.Fatal(err)
+	}
+	rt := testRuntime(t)
+	router := NewRouterWithRuntime(rt, RouterOptions{RecommendationFeed: feed})
+	request := httptest.NewRequest(http.MethodGet, "/link/?lan=id&recommend=1", nil)
+	request.Host = "outside.example"
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), "Situs Rekomendasi") || !strings.Contains(response.Body.String(), "Hub Recommendation") {
+		t.Fatalf("Hub recommendation missing: status=%d", response.Code)
+	}
+	if gotDomain != "outside.example" || gotPath != "/link/" {
+		t.Fatalf("Hub feed parameters = %q / %q", gotDomain, gotPath)
+	}
+}
+
 func TestRecommendationRequestPathPreservesOriginalCase(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "http://outside.example/index.php?domain=content.example&path="+url.QueryEscape(`/News/Item.html`)+"&recommend=1", nil)
 	if got := recommendationRequestPath(r); got != "/News/Item.html" {

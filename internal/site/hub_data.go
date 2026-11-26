@@ -95,6 +95,7 @@ const hubCopyJSON = `{
       ]
     },
     "sections": {
+      "external": "External links",
       "article": "{brand} Resource Guide",
       "internal_nav": "Recent Link Navigation",
       "resources": "Featured External Resources",
@@ -195,6 +196,7 @@ const hubCopyJSON = `{
       ]
     },
     "sections": {
+      "external": "Tautan eksternal",
       "article": "Panduan Sumber {brand}",
       "internal_nav": "Navigasi Link Tujuh Hari",
       "resources": "Sumber Eksternal Pilihan",
@@ -295,6 +297,7 @@ const hubCopyJSON = `{
       ]
     },
     "sections": {
+      "external": "ลิงก์ภายนอก",
       "article": "คู่มือแหล่งข้อมูล {brand}",
       "internal_nav": "ลิงก์ภายใน 7 วันล่าสุด",
       "resources": "แหล่งข้อมูลภายนอกที่แนะนำ",
@@ -395,6 +398,7 @@ const hubCopyJSON = `{
       ]
     },
     "sections": {
+      "external": "Lien ket ben ngoai",
       "article": "Huong dan tai nguyen {brand}",
       "internal_nav": "Dieu huong link bay ngay",
       "resources": "Nguon ben ngoai noi bat",

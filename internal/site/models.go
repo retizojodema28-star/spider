@@ -72,20 +72,21 @@ type DomainImageBinding struct {
 }
 
 type SiteLink struct {
-	ID         uint   `gorm:"primaryKey"`
-	SiteKey    string `gorm:"size:120;index;not null"`
-	AppSlug    string `gorm:"size:180;index"`
-	Kind       string `gorm:"size:20;index;not null"`
-	Language   string `gorm:"size:12;index;not null"`
-	Domain     string `gorm:"size:255;index"`
-	AnchorText string `gorm:"size:255;not null"`
-	TargetURL  string `gorm:"size:1000;not null"`
-	Category   string `gorm:"size:100"`
-	Weight     int    `gorm:"not null;default:1"`
-	Enabled    bool   `gorm:"not null;default:true;index"`
-	Remark     string `gorm:"size:500"`
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	ID            uint   `gorm:"primaryKey"`
+	SiteKey       string `gorm:"size:120;index;not null"`
+	AppSlug       string `gorm:"size:180;index"`
+	Kind          string `gorm:"size:20;index;not null"`
+	Language      string `gorm:"size:12;index;not null"`
+	Domain        string `gorm:"size:255;index"`
+	AnchorText    string `gorm:"size:255;not null"`
+	TargetURL     string `gorm:"size:1000;not null"`
+	Category      string `gorm:"size:100"`
+	RecommendTier int    `gorm:"not null;default:0;index"`
+	Weight        int    `gorm:"not null;default:1"`
+	Enabled       bool   `gorm:"not null;default:true;index"`
+	Remark        string `gorm:"size:500"`
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
 func Migrate(db interface{ AutoMigrate(...any) error }) error {

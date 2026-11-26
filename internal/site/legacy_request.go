@@ -346,7 +346,13 @@ func legacyRawEncode(s string) string {
 }
 
 func legacyHashURI(raw, prefix string) string {
-	if raw == "" || prefix == "" {
+	if raw == "" {
+		return raw
+	}
+	if prefix == "" {
+		if i := strings.IndexByte(raw, '?'); i >= 0 {
+			return raw[:i+1] + legacyWithoutQueryKey(raw[i+1:], "recommend")
+		}
 		return raw
 	}
 	p, ok := legacyParseURL(raw)
@@ -358,6 +364,7 @@ func legacyHashURI(raw, prefix string) string {
 		m := legacyPathQuery.FindStringSubmatch(s)
 		return m[1] + "path=" + legacyRawEncode(RemoveLegacyPrefix(legacyUnescape(m[2], false), prefix))
 	})
+	p.query = legacyWithoutQueryKey(p.query, "recommend")
 	// DynamicPageService reconstructs components explicitly, including omitting
 	// the leading // for a protocol-relative authority. Match that hash contract.
 	var b strings.Builder
@@ -383,6 +390,22 @@ func legacyHashURI(raw, prefix string) string {
 		b.WriteString("#" + p.fragment)
 	}
 	return b.String()
+}
+
+func legacyWithoutQueryKey(raw, key string) string {
+	if raw == "" {
+		return raw
+	}
+	parts := strings.Split(raw, "&")
+	kept := parts[:0]
+	for _, part := range parts {
+		rawKey, _, _ := strings.Cut(part, "=")
+		if strings.EqualFold(legacyUnescape(rawKey, true), key) {
+			continue
+		}
+		kept = append(kept, part)
+	}
+	return strings.Join(kept, "&")
 }
 
 func legacyQuery(raw string) map[string]string {

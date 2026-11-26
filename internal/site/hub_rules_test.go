@@ -78,6 +78,31 @@ func TestHubDSLAndDefaults(t *testing.T) {
 	}
 }
 
+func TestHubLinkSelectionSplitsRecommendTiersWithinPHPCount(t *testing.T) {
+	rows := make([]LegacyManagedLink, 0, 100)
+	for i := 0; i < 100; i++ {
+		rows = append(rows, LegacyManagedLink{ID: uint(i + 1), Enabled: true, TargetURL: fmt.Sprintf("https://hub-%03d.example/", i+1), AnchorText: fmt.Sprintf("Hub %03d", i+1), RecommendTier: i % 2, Weight: 100})
+	}
+	cfg := DefaultHubConfig()
+	cfg.ExternalMin = 10
+	cfg.ExternalMax = 10
+	cfg.BottomLinkCount = 2
+	left, recommended, bottom, _, poolSize := hubSelectLinks("hub-test", "2026-11-25", "2026-11-25", cfg, LegacySnapshot{ExternalLinks: rows}, HubSnapshot{})
+	if poolSize != 100 {
+		t.Fatalf("pool size = %d", poolSize)
+	}
+	if len(left) != 5 || len(recommended) != 5 || len(bottom) != 2 {
+		t.Fatalf("tier selection = %d + %d + bottom %d, want 5 + 5 + 2", len(left), len(recommended), len(bottom))
+	}
+	seen := map[string]bool{}
+	for _, link := range append(append(append([]HubLink{}, left...), recommended...), bottom...) {
+		if seen[link.URL] {
+			t.Fatalf("duplicate hub link: %s", link.URL)
+		}
+		seen[link.URL] = true
+	}
+}
+
 // ExampleBuildHubPage covers the pure builder boundary used by the public
 // /link endpoint and the administration/migration code that owns its data.
 func ExampleBuildHubPage() {

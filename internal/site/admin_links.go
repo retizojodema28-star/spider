@@ -29,6 +29,7 @@ type adminLinkInput struct {
 	Title         string `json:"title"`
 	Path          string `json:"path"`
 	Category      string `json:"category"`
+	RecommendTier *int   `json:"recommend_tier"`
 	Weight        *int   `json:"weight"`
 	Enabled       *bool  `json:"enabled"`
 	Remark        string `json:"remark"`
@@ -111,6 +112,13 @@ func (a *adminServer) normalizeLink(b adminLinkInput, collection string) (SiteLi
 	if validateText(b.Category, 100) != nil || validateText(b.Remark, 500) != nil {
 		return fail("invalid category or remark")
 	}
+	tier := 0
+	if b.RecommendTier != nil {
+		tier = *b.RecommendTier
+	}
+	if tier < 0 || tier > 1 {
+		return fail("recommend_tier must be 0 or 1")
+	}
 	if collection == "internal-domain" {
 		if domain == "" || domain == "global" {
 			return fail("internal domain required")
@@ -138,11 +146,11 @@ func (a *adminServer) normalizeLink(b adminLinkInput, collection string) (SiteLi
 	if err := validateAdminURL(b.TargetURL, collection == "internal", false); err != nil {
 		return fail(err.Error())
 	}
-	return SiteLink{ID: b.ID, SiteKey: b.SiteKey, AppSlug: b.AppSlug, Kind: collection, Language: b.Language, Domain: domain, AnchorText: b.AnchorText, TargetURL: b.TargetURL, Category: b.Category, Weight: weight, Enabled: enabled, Remark: b.Remark}, InternalDomain{}, nil
+	return SiteLink{ID: b.ID, SiteKey: b.SiteKey, AppSlug: b.AppSlug, Kind: collection, Language: b.Language, Domain: domain, AnchorText: b.AnchorText, TargetURL: b.TargetURL, Category: b.Category, RecommendTier: tier, Weight: weight, Enabled: enabled, Remark: b.Remark}, InternalDomain{}, nil
 }
 
 func adminLinkJSON(l SiteLink) gin.H {
-	return gin.H{"id": l.ID, "site_key": l.SiteKey, "app_slug": l.AppSlug, "type": l.Kind, "lang": l.Language, "domain": l.Domain, "anchor_text": l.AnchorText, "target_url": l.TargetURL, "url": l.TargetURL, "label": l.AnchorText, "category": l.Category, "weight": l.Weight, "enabled": l.Enabled, "remark": l.Remark}
+	return gin.H{"id": l.ID, "site_key": l.SiteKey, "app_slug": l.AppSlug, "type": l.Kind, "lang": l.Language, "domain": l.Domain, "anchor_text": l.AnchorText, "target_url": l.TargetURL, "url": l.TargetURL, "label": l.AnchorText, "category": l.Category, "recommend_tier": l.RecommendTier, "weight": l.Weight, "enabled": l.Enabled, "remark": l.Remark}
 }
 
 func (a *adminServer) links(c *gin.Context) {
@@ -218,7 +226,7 @@ func (a *adminServer) links(c *gin.Context) {
 			}
 			return reindexRuntimeLinks(tx, l.SiteKey, l.Kind, l.Kind == "main-external")
 		}
-		res := tx.Model(&SiteLink{}).Where("id = ? AND site_key = ? AND kind = ?", l.ID, l.SiteKey, l.Kind).Select("AppSlug", "Language", "Domain", "AnchorText", "TargetURL", "Category", "Weight", "Enabled", "Remark").Updates(&l)
+		res := tx.Model(&SiteLink{}).Where("id = ? AND site_key = ? AND kind = ?", l.ID, l.SiteKey, l.Kind).Select("AppSlug", "Language", "Domain", "AnchorText", "TargetURL", "Category", "RecommendTier", "Weight", "Enabled", "Remark").Updates(&l)
 		if res.Error != nil {
 			return res.Error
 		}
@@ -232,6 +240,11 @@ func (a *adminServer) links(c *gin.Context) {
 		}
 		if err := saveRuntimeLinkMetadata(tx, l, m.EffectiveDate, m.SourceFile, m.PHPID); err != nil {
 			return err
+		}
+		if l.Kind == "external" && l.SiteKey == "default" {
+			if err := tx.Model(&RuntimeExternalRecord{}).Where("link_id = ?", l.ID).Update("recommend_tier", l.RecommendTier).Error; err != nil {
+				return err
+			}
 		}
 		if m.PHPID == 0 {
 			return reindexRuntimeLinks(tx, l.SiteKey, l.Kind, l.Kind == "main-external")
@@ -268,7 +281,7 @@ func adminCreateLinkWithMetadata(tx *gorm.DB, l *SiteLink, date, source string) 
 		return err
 	}
 	l.Enabled, l.Weight = enabled, weight
-	if err := tx.Model(l).Updates(map[string]any{"enabled": enabled, "weight": weight}).Error; err != nil {
+	if err := tx.Model(l).Updates(map[string]any{"enabled": enabled, "recommend_tier": l.RecommendTier, "weight": weight}).Error; err != nil {
 		return err
 	}
 	// The caller assigns logical IDs once after the complete mutation, before
@@ -431,7 +444,7 @@ func normalizedAdminImportRow(line string) ([]string, error) {
 		r := csv.NewReader(strings.NewReader(line))
 		r.Comma, r.TrimLeadingSpace, r.FieldsPerRecord = delimiter, true, -1
 		fields, err := r.Read()
-		if err != nil || len(fields) != 8 {
+		if err != nil || (len(fields) != 8 && len(fields) != 9) {
 			continue
 		}
 		for i := range fields {
@@ -450,7 +463,7 @@ func normalizedAdminImportRow(line string) ([]string, error) {
 		candidate = fields
 	}
 	if candidate == nil {
-		return nil, fmt.Errorf("expected eight valid normalized columns (pipe, tab, or comma separated)")
+		return nil, fmt.Errorf("expected eight or nine valid normalized columns (pipe, tab, or comma separated)")
 	}
 	return candidate, nil
 }
@@ -476,6 +489,12 @@ func normalizedAdminFieldsValid(fields []string) bool {
 	}
 	if fields[6] != "" {
 		if _, err := strconv.ParseBool(fields[6]); err != nil {
+			return false
+		}
+	}
+	if len(fields) == 9 && fields[8] != "" {
+		tier, err := strconv.Atoi(fields[8])
+		if err != nil || tier < 0 || tier > 1 {
 			return false
 		}
 	}
@@ -644,7 +663,7 @@ func (a *adminServer) importLinks(c *gin.Context) {
 			weight = get(5)
 			enabled = get(6)
 			in.Remark = get(7)
-		} else if collection != "internal" && len(row) == 8 {
+		} else if collection != "internal" && (len(row) == 8 || len(row) == 9) {
 			in.Domain = get(0)
 			in.Language = get(1)
 			in.AnchorText = get(2)
@@ -653,6 +672,14 @@ func (a *adminServer) importLinks(c *gin.Context) {
 			weight = get(5)
 			enabled = get(6)
 			in.Remark = get(7)
+			if get(8) != "" {
+				v, e := strconv.Atoi(get(8))
+				if e != nil {
+					adminError(c, 422, fmt.Sprintf("row %d: invalid recommend_tier", n+1))
+					return
+				}
+				in.RecommendTier = &v
+			}
 		} else {
 			if len(row) > 2 {
 				adminError(c, 422, fmt.Sprintf("row %d: expected URL,label or 8-column external row", n+1))

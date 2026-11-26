@@ -53,10 +53,11 @@ curl -fsS http://127.0.0.1:18082/healthz
 
 ## 可选推荐内容 Feed
 
-如需在详情页“外部链接”后追加“推荐网站”区块，设置固定的 `RECOMMEND_FEED_URL`。该值只能是运维配置的绝对 HTTP/HTTPS 地址，不能由公开请求指定。访问页面时追加 `recommend=1` 才会启用，服务端会把当前内容域名和原始请求路径分别作为 `domain`、`path` 查询参数追加到 Feed 地址。
+如需在详情页或 `/link/` 页追加“推荐网站”区块，设置固定的 `RECOMMEND_FEED_URL`。该值只能是运维配置的绝对 HTTP/HTTPS 地址，不能由公开请求指定。访问页面时追加 `recommend=1` 才会启用，服务端会把当前内容域名和原始请求路径分别作为 `domain`、`path` 查询参数追加到 Feed 地址。
 
 ```text
 /apps/example?lan=id&recommend=1
+/link/?lan=id&recommend=1
 ```
 
 Feed 返回的 HTML 片段会经过标签和链接白名单过滤，并在内存中短暂缓存；超时、状态码异常、跨主机重定向或内容过大时，页面主体仍正常返回，仅跳过推荐区块。
@@ -64,6 +65,8 @@ Feed 返回的 HTML 片段会经过标签和链接白名单过滤，并在内存
 ## 后台操作
 
 后台包括 Hub 设置、站点设置、语言/图片绑定、应用数据、首页与详情页链接、导入预览和语言刷新任务。保存后会刷新内存快照，无需重启服务。外部链接保存目标 URL、锚文本、语言、权重和启用状态等业务字段；公开 `/link/` 页面使用这些数据和按日期保存的外链快照生成聚合页。
+
+外链记录的 `recommend_tier` 用于稳定分组：`0` 进入第一组“Tautan eksternal”，`1` 进入第二组；第二组在 `recommend=1` 时继续显示 Feed 返回的“Situs Rekomendasi”。该字段不改变 PHP 的总数口径：详情页仍为 `main_page_external_link_limit`（默认 12），`/link/` 仍使用 `external_min`～`external_max` 加 `bottom_link_count`。
 
 ## 检查命令
 

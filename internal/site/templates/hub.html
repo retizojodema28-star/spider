@@ -45,6 +45,11 @@ h1,h2,h3,p{margin-top:0}
 .date-nav-links a{max-width:100%;padding:5px 9px;border:1px solid #d5e9dd;border-radius:3px;color:var(--green);font-size:12px;line-height:1.5}
 .date-nav-links a:hover{background:#f0f5f2;text-decoration:none}
 .related-links a,.intro-links a{max-width:100%;padding:5px 10px;border:1px solid var(--line);font-size:13px;border-radius:3px}
+.hub-link-section{margin-top:28px;padding-top:24px;border-top:1px solid var(--line)}
+.hub-link-section h2{font-size:19px;line-height:1.35;margin:0 0 16px}
+.hub-link-section h3{font-size:16px;line-height:1.35;margin:22px 0 12px}
+.hub-link-buttons{display:flex;flex-wrap:wrap;gap:8px}.hub-link-button{display:inline-flex;align-items:center;max-width:100%;padding:7px 11px;border:1px solid #d8e5dd;border-radius:4px;background:#f4faf6;color:#176b3c;font-size:13px;font-weight:650;overflow-wrap:anywhere}
+.hub-link-button:hover{background:#eaf6ee;text-decoration:none}
 .faq details{padding:13px 0;border-top:1px solid var(--line)}
 .faq summary{cursor:pointer;font-size:14px;font-weight:650}
 .faq p{font-size:13px;color:var(--muted);margin:10px 0 0}
@@ -67,6 +72,8 @@ h1,h2,h3,p{margin-top:0}
 {{if .Images.Primary}}<figure class="seo-image"><img src="{{.Images.Primary}}" alt="{{.Images.Alt}}" width="1200" height="630" loading="eager"></figure>{{end}}
 {{if .DateNavigation}}<section class="date-nav" aria-label="{{.Sections.internal_nav}}"><h2>{{.Sections.internal_nav}}</h2><div class="date-nav-grid">{{range .DateNavigation}}<div class="date-nav-day"><h3>{{.Label}}</h3><div class="date-nav-links">{{range .Links}}<a {{$.Href .URL}}>{{.Anchor}}</a>{{end}}</div></div>{{end}}</div></section>{{end}}
 {{if .RestArticles}}<section class="article article-more" aria-label="延伸正文"><h2>{{.Sections.article}}</h2>{{range .RestArticles}}<article class="article-block"><h3>{{.Heading}}</h3><p>{{.Lead}}{{with .Link}}<a {{$.AbsoluteHref .URL}}{{if $.Config.LinkRel}} rel="{{$.Config.LinkRel}}"{{end}} target="_blank">{{.Anchor}}</a>{{end}}{{.Tail}}</p></article>{{end}}</section>{{end}}
+{{if .LeftLinks}}<section class="hub-link-section" aria-label="{{.Sections.external}}"><h2>{{.Sections.external}}</h2><div class="hub-link-buttons">{{range .LeftLinks}}<a class="hub-link-button" {{$.AbsoluteHref .URL}}{{if $.Config.LinkRel}} rel="{{$.Config.LinkRel}}"{{end}} target="_blank">{{.Anchor}}</a>{{end}}</div></section>{{end}}
+{{if or .RecommendedExternalLinks .RecommendedHTML}}<section class="hub-link-section recommended-sites-section" id="recommended-sites">{{if .RecommendedExternalLinks}}<h2>{{.Sections.external}}</h2><div class="hub-link-buttons">{{range .RecommendedExternalLinks}}<a class="hub-link-button" {{$.AbsoluteHref .URL}}{{if $.Config.LinkRel}} rel="{{$.Config.LinkRel}}"{{end}} target="_blank">{{.Anchor}}</a>{{end}}</div>{{end}}{{if .RecommendedHTML}}<h3>{{.RecommendedHeading}}</h3><div class="recommended-feed-content">{{.RecommendedHTML}}</div>{{end}}</section>{{end}}
 {{if .RelatedPages}}<section class="related" aria-label="相关站内页面"><h2>{{.Sections.related}}</h2><div class="related-links">{{range .RelatedPages}}<a {{$.Href .URL}}>{{.Anchor}}</a>{{end}}</div></section>{{end}}
 {{if .FAQ}}<section class="faq" aria-label="FAQ"><h2>{{.Sections.faq}}</h2>{{range .FAQ}}<details><summary>{{.Question}}</summary><p>{{.Answer}}</p></details>{{end}}</section>{{end}}
 <section class="intro" aria-label="{{.Labels.intro_heading}}"><h2>{{.Labels.intro_heading}}</h2><p>{{.IntroText}}</p>{{if .BottomLinks}}<div class="intro-cta-h" style="font-size:12px;font-weight:700;text-transform:uppercase;color:#0c4a6e;margin-top:12px;letter-spacing:.06em">{{.Labels.intro_cta}}</div><div class="intro-links">{{range .BottomLinks}}<a {{$.AbsoluteHref .URL}}{{if $.Config.LinkRel}} rel="{{$.Config.LinkRel}}"{{end}} target="_blank">{{.Anchor}}</a>{{end}}</div>{{end}}</section>

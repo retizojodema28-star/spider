@@ -71,7 +71,7 @@ func LegacySnapshotFromRuntimeForSite(s *Snapshot, siteKey string) LegacySnapsho
 }
 
 func legacyManagedFromSite(l SiteLink) LegacyManagedLink {
-	return LegacyManagedLink{ID: l.ID, Domain: l.Domain, Title: l.AnchorText, Path: l.TargetURL, Language: l.Language, AnchorText: l.AnchorText, TargetURL: l.TargetURL, Category: l.Category, Weight: l.Weight, Enabled: l.Enabled, Remark: l.Remark}
+	return LegacyManagedLink{ID: l.ID, Domain: l.Domain, Title: l.AnchorText, Path: l.TargetURL, Language: l.Language, AnchorText: l.AnchorText, TargetURL: l.TargetURL, Category: l.Category, RecommendTier: l.RecommendTier, Weight: l.Weight, Enabled: l.Enabled, Remark: l.Remark}
 }
 
 func legacyBuildLinks(p *LegacyPage, s LegacySnapshot) {
@@ -238,12 +238,8 @@ func legacyBuildLinks(p *LegacyPage, s LegacySnapshot) {
 	externalLimit := max(0, min(legacyMaxPageExternalLinks, p.Config.ExternalLinkLimit))
 	if s.ShowExternalPanel && externalLimit > 0 {
 		rows := legacyExternalRows(external, legacyMaxPageExternalLinks)
-		rows = legacyShuffle(rows, func(l LegacyManagedLink) string {
-			return sha1Hex(p.Hash + "|external-link|" + string(l.hashJSON(false)))
-		})
-		rows = rows[:min(externalLimit, len(rows))]
-		p.ExternalLinks = legacyExternalTargets(rows)
-		if len(p.ExternalLinks) == 0 {
+		p.ExternalLinks, p.RecommendedExternalLinks = legacyTieredExternalTargets(rows, p.Hash, externalLimit)
+		if len(p.ExternalLinks)+len(p.RecommendedExternalLinks) == 0 {
 			base := p.Config.DownloadBaseURL
 			if base == "" {
 				base = "https://download.invalid/apk/"
@@ -342,6 +338,46 @@ func legacyExternalTargets(rows []LegacyManagedLink) []LegacyLink {
 		}
 	}
 	return out
+}
+
+// legacyTieredExternalTargets preserves the configured total while splitting
+// the deterministic ranking into two disjoint display groups. Tier 0 remains
+// first so existing rows without the new field behave exactly as before.
+func legacyTieredExternalTargets(rows []LegacyManagedLink, pageHash string, limit int) (primary, recommended []LegacyLink) {
+	if limit <= 0 || len(rows) == 0 {
+		return nil, nil
+	}
+	groups := [2][]LegacyManagedLink{}
+	for _, row := range rows {
+		tier := row.RecommendTier
+		if tier < 0 || tier > 1 {
+			tier = 0
+		}
+		groups[tier] = append(groups[tier], row)
+	}
+	for tier := range groups {
+		salt := "|external-link-primary|"
+		if tier == 1 {
+			salt = "|external-link-recommended|"
+		}
+		groups[tier] = legacyShuffle(groups[tier], func(l LegacyManagedLink) string {
+			return sha1Hex(pageHash + salt + string(l.hashJSON(false)))
+		})
+	}
+	primaryTarget := (limit + 1) / 2
+	recommendedTarget := limit - primaryTarget
+	primaryN := min(primaryTarget, len(groups[0]))
+	recommendedN := min(recommendedTarget, len(groups[1]))
+	remaining := limit - primaryN - recommendedN
+	if remaining > 0 {
+		add := min(remaining, len(groups[0])-primaryN)
+		primaryN += add
+		remaining -= add
+	}
+	if remaining > 0 {
+		recommendedN += min(remaining, len(groups[1])-recommendedN)
+	}
+	return legacyExternalTargets(groups[0][:primaryN]), legacyExternalTargets(groups[1][:recommendedN])
 }
 
 func (l LegacyManagedLink) hashJSON(internal bool) []byte {
