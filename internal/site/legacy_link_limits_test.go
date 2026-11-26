@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func TestLegacyExternalLinksUseDailyTwelveItemWindow(t *testing.T) {
+func TestLegacyExternalLinksUseStableTwelveItemSet(t *testing.T) {
 	external := make([]LegacyManagedLink, 0, 20)
 	mainExternal := make([]LegacyManagedLink, 0, 20)
 	for i := 0; i < 20; i++ {
@@ -66,8 +66,8 @@ func TestLegacyExternalLinksUseDailyTwelveItemWindow(t *testing.T) {
 	for _, link := range nextDay.ExternalLinks {
 		nextSet[link.Path] = true
 	}
-	if len(firstSet) == 0 || len(nextSet) == 0 || mapKeysEqual(firstSet, nextSet) {
-		t.Fatal("external-link window did not change on the next UTC day")
+	if len(firstSet) == 0 || !mapKeysEqual(firstSet, nextSet) {
+		t.Fatal("external-link set changed for the same route on the next UTC day")
 	}
 }
 

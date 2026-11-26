@@ -8,7 +8,6 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-	"time"
 )
 
 const (
@@ -239,7 +238,10 @@ func legacyBuildLinks(p *LegacyPage, s LegacySnapshot) {
 	externalLimit := max(0, min(legacyMaxPageExternalLinks, p.Config.ExternalLinkLimit))
 	if s.ShowExternalPanel && externalLimit > 0 {
 		rows := legacyExternalRows(external, legacyMaxPageExternalLinks)
-		rows = legacyExternalWindow(p, s, rows, externalLimit)
+		rows = legacyShuffle(rows, func(l LegacyManagedLink) string {
+			return sha1Hex(p.Hash + "|external-link|" + string(l.hashJSON(false)))
+		})
+		rows = rows[:min(externalLimit, len(rows))]
 		p.ExternalLinks = legacyExternalTargets(rows)
 		if len(p.ExternalLinks) == 0 {
 			base := p.Config.DownloadBaseURL
@@ -332,33 +334,6 @@ func legacyExternalRows(rows []LegacyManagedLink, limit int) []LegacyManagedLink
 	return out[:min(len(out), min(legacyMaxPageExternalLinks, limit))]
 }
 
-// legacyExternalWindow keeps one page's external-link set stable for the UTC
-// calendar day, then advances the window by the configured size on the next
-// day. The pool is page-specific, so different routes do not share a fixed set.
-func legacyExternalWindow(p *LegacyPage, s LegacySnapshot, rows []LegacyManagedLink, limit int) []LegacyManagedLink {
-	if limit <= 0 || len(rows) == 0 {
-		return nil
-	}
-	ordered := legacyShuffle(rows, func(l LegacyManagedLink) string {
-		return sha1Hex(p.Hash + "|external-pool|" + string(l.hashJSON(false)))
-	})
-	day := s.Now
-	if day.IsZero() {
-		day = time.Now().UTC()
-	}
-	day = day.UTC()
-	dayNumber := day.Unix() / 86400
-	if dayNumber < 0 {
-		dayNumber = -dayNumber
-	}
-	step := int64(max(1, limit))
-	start := int((dayNumber * step) % int64(len(ordered)))
-	selected := make([]LegacyManagedLink, 0, min(limit, len(ordered)))
-	for i := 0; i < limit && i < len(ordered); i++ {
-		selected = append(selected, ordered[(start+i)%len(ordered)])
-	}
-	return selected
-}
 func legacyExternalTargets(rows []LegacyManagedLink) []LegacyLink {
 	out := []LegacyLink{}
 	for _, row := range rows {
