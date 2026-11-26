@@ -29,12 +29,9 @@ func TestPublicRecommendationFeedAddsOriginalDomainAndPath(t *testing.T) {
 	rt := testRuntime(t)
 	router := NewRouterWithRuntime(rt, RouterOptions{RecommendationFeed: feed})
 
-	request := func(recommend bool) *httptest.ResponseRecorder {
+	request := func(extra string) *httptest.ResponseRecorder {
 		t.Helper()
-		path := "/apps/example-app?domain=content.example&path=%2FNews%2FItem.html&lan=id"
-		if recommend {
-			path += "&recommend=1"
-		}
+		path := "/apps/example-app?domain=content.example&path=%2FNews%2FItem.html&lan=id" + extra
 		r := httptest.NewRequest(http.MethodGet, path, nil)
 		r.Host = "outside.example"
 		w := httptest.NewRecorder()
@@ -42,15 +39,20 @@ func TestPublicRecommendationFeedAddsOriginalDomainAndPath(t *testing.T) {
 		return w
 	}
 
-	without := request(false)
+	without := request("")
 	if without.Code != http.StatusOK || strings.Contains(without.Body.String(), "Situs Rekomendasi") {
-		t.Fatal("recommendation section rendered without the recommend parameter")
+		t.Fatal("recommendation section rendered without the feed parameter")
 	}
 	if requests.Load() != 0 {
-		t.Fatal("feed was requested without the recommend parameter")
+		t.Fatal("feed was requested without the feed parameter")
 	}
 
-	with := request(true)
+	recommendOnly := request("&recommend=1")
+	if strings.Contains(recommendOnly.Body.String(), "Situs Rekomendasi") || requests.Load() != 0 {
+		t.Fatal("recommend parameter must not enable the feed")
+	}
+
+	with := request("&feed=1")
 	if with.Code != http.StatusOK {
 		t.Fatalf("recommendation request status = %d", with.Code)
 	}
@@ -70,7 +72,7 @@ func TestPublicRecommendationFeedAddsOriginalDomainAndPath(t *testing.T) {
 		}
 	}
 
-	_ = request(true)
+	_ = request("&feed=1")
 	if requests.Load() != 1 {
 		t.Fatalf("feed cache miss count = %d", requests.Load())
 	}
@@ -107,7 +109,7 @@ func TestHubRecommendationFeedUsesSameFixedEndpoint(t *testing.T) {
 	}
 	rt := testRuntime(t)
 	router := NewRouterWithRuntime(rt, RouterOptions{RecommendationFeed: feed})
-	request := httptest.NewRequest(http.MethodGet, "/link/?lan=id&recommend=1", nil)
+	request := httptest.NewRequest(http.MethodGet, "/link/?lan=id&feed=1", nil)
 	request.Host = "outside.example"
 	response := httptest.NewRecorder()
 	router.ServeHTTP(response, request)
@@ -120,11 +122,11 @@ func TestHubRecommendationFeedUsesSameFixedEndpoint(t *testing.T) {
 }
 
 func TestRecommendationRequestPathPreservesOriginalCase(t *testing.T) {
-	r := httptest.NewRequest(http.MethodGet, "http://outside.example/index.php?domain=content.example&path="+url.QueryEscape(`/News/Item.html`)+"&recommend=1", nil)
+	r := httptest.NewRequest(http.MethodGet, "http://outside.example/index.php?domain=content.example&path="+url.QueryEscape(`/News/Item.html`)+"&feed=1", nil)
 	if got := recommendationRequestPath(r); got != "/News/Item.html" {
 		t.Fatalf("recommendation path = %q", got)
 	}
-	r = httptest.NewRequest(http.MethodGet, "http://outside.example/Apps/MixedCase.html?recommend=1", nil)
+	r = httptest.NewRequest(http.MethodGet, "http://outside.example/Apps/MixedCase.html?feed=1", nil)
 	if got := recommendationRequestPath(r); got != "/Apps/MixedCase.html" {
 		t.Fatalf("direct recommendation path = %q", got)
 	}

@@ -237,9 +237,9 @@ func legacyBuildLinks(p *LegacyPage, s LegacySnapshot) {
 	}
 	externalLimit := max(0, min(legacyMaxPageExternalLinks, p.Config.ExternalLinkLimit))
 	if s.ShowExternalPanel && externalLimit > 0 {
-		rows := legacyExternalRows(external, legacyMaxPageExternalLinks)
-		p.ExternalLinks, p.RecommendedExternalLinks = legacyTieredExternalTargets(rows, p.Hash, externalLimit)
-		if len(p.ExternalLinks)+len(p.RecommendedExternalLinks) == 0 {
+		rows := legacyExternalRowsFiltered(external, legacyMaxPageExternalLinks, p.RecommendTierFilter, p.RecommendFiltered)
+		p.ExternalLinks = legacySelectExternalTargets(rows, p.Hash, externalLimit)
+		if len(p.ExternalLinks) == 0 && !p.RecommendFiltered {
 			base := p.Config.DownloadBaseURL
 			if base == "" {
 				base = "https://download.invalid/apk/"
@@ -312,12 +312,16 @@ func legacyRootDomain(host string, hosts []string) string {
 }
 
 func legacyExternalRows(rows []LegacyManagedLink, limit int) []LegacyManagedLink {
+	return legacyExternalRowsFiltered(rows, limit, 0, false)
+}
+
+func legacyExternalRowsFiltered(rows []LegacyManagedLink, limit, recommendTier int, recommendFiltered bool) []LegacyManagedLink {
 	if limit <= 0 {
 		return nil
 	}
 	out := []LegacyManagedLink{}
 	for _, row := range rows {
-		if row.Enabled && row.TargetURL != "" {
+		if row.Enabled && row.TargetURL != "" && recommendTierMatches(row.RecommendTier, recommendTier, recommendFiltered) {
 			out = append(out, row)
 		}
 	}
@@ -340,44 +344,16 @@ func legacyExternalTargets(rows []LegacyManagedLink) []LegacyLink {
 	return out
 }
 
-// legacyTieredExternalTargets preserves the configured total while splitting
-// the deterministic ranking into two disjoint display groups. Tier 0 remains
-// first so existing rows without the new field behave exactly as before.
-func legacyTieredExternalTargets(rows []LegacyManagedLink, pageHash string, limit int) (primary, recommended []LegacyLink) {
+// legacySelectExternalTargets applies the request-level recommend_tier filter
+// before ranking, then returns one deterministic list using the PHP total.
+func legacySelectExternalTargets(rows []LegacyManagedLink, pageHash string, limit int) []LegacyLink {
 	if limit <= 0 || len(rows) == 0 {
-		return nil, nil
+		return nil
 	}
-	groups := [2][]LegacyManagedLink{}
-	for _, row := range rows {
-		tier := row.RecommendTier
-		if tier < 0 || tier > 1 {
-			tier = 0
-		}
-		groups[tier] = append(groups[tier], row)
-	}
-	for tier := range groups {
-		salt := "|external-link-primary|"
-		if tier == 1 {
-			salt = "|external-link-recommended|"
-		}
-		groups[tier] = legacyShuffle(groups[tier], func(l LegacyManagedLink) string {
-			return sha1Hex(pageHash + salt + string(l.hashJSON(false)))
-		})
-	}
-	primaryTarget := (limit + 1) / 2
-	recommendedTarget := limit - primaryTarget
-	primaryN := min(primaryTarget, len(groups[0]))
-	recommendedN := min(recommendedTarget, len(groups[1]))
-	remaining := limit - primaryN - recommendedN
-	if remaining > 0 {
-		add := min(remaining, len(groups[0])-primaryN)
-		primaryN += add
-		remaining -= add
-	}
-	if remaining > 0 {
-		recommendedN += min(remaining, len(groups[1])-recommendedN)
-	}
-	return legacyExternalTargets(groups[0][:primaryN]), legacyExternalTargets(groups[1][:recommendedN])
+	rows = legacyShuffle(rows, func(l LegacyManagedLink) string {
+		return sha1Hex(pageHash + "|external-link|" + string(l.hashJSON(false)))
+	})
+	return legacyExternalTargets(rows[:min(limit, len(rows))])
 }
 
 func (l LegacyManagedLink) hashJSON(internal bool) []byte {

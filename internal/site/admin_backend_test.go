@@ -266,7 +266,8 @@ func TestAdminLinksImportRollbackAndPreprocess(t *testing.T) {
 	if err := h.db.Where("link_id = ?", link.ID).First(&snapshotRecord).Error; err != nil || snapshotRecord.RecommendTier != 0 {
 		t.Fatalf("snapshot recommend tier was not updated: %+v err=%v", snapshotRecord, err)
 	}
-	h.call("POST", "/admin/api/external-links", map[string]any{"anchor_text": "Bad tier", "target_url": "https://tier.test/", "recommend_tier": 2}, 422)
+	h.call("POST", "/admin/api/external-links", map[string]any{"anchor_text": "Tier two", "target_url": "https://tier.test/", "recommend_tier": 2}, 200)
+	h.call("POST", "/admin/api/external-links", map[string]any{"anchor_text": "Bad tier", "target_url": "https://tier.test/", "recommend_tier": -1}, 422)
 	before := h.rt.Snapshot().Revision
 	h.call("POST", "/admin/api/sites/links/import", map[string]any{"type": "external", "strategy": "replace", "links": "https://good.test/,Good\njavascript:alert(1),Bad"}, 422)
 	if h.rt.Snapshot().Revision != before || h.rt.Snapshot().Links[0].AnchorText != "Changed" {
@@ -300,8 +301,28 @@ func TestNormalizedExternalImportSupportsRecommendTier(t *testing.T) {
 	if err != nil || len(rows) != 1 || len(rows[0]) != 9 || rows[0][8] != "1" {
 		t.Fatalf("normalized tier import: rows=%#v err=%v", rows, err)
 	}
-	if _, err := splitAdminImportFormat("global|id|Partner|https://partner.test/|demo|100|true|note|2", "normalized"); err == nil {
-		t.Fatal("invalid recommend tier import accepted")
+	if rows, err := splitAdminImportFormat("global|id|Partner|https://partner.test/|demo|100|true|note|2", "normalized"); err != nil || rows[0][8] != "2" {
+		t.Fatalf("tier two import rejected: rows=%#v err=%v", rows, err)
+	}
+	if _, err := splitAdminImportFormat("global|id|Partner|https://partner.test/|demo|100|true|note|-1", "normalized"); err == nil {
+		t.Fatal("negative recommend tier import accepted")
+	}
+}
+
+func TestAdminPreprocessPreservesRecommendTier(t *testing.T) {
+	h := newAdminHarness(t, nil)
+	h.login()
+	result := h.call("POST", "/admin/api/external-links/preprocess", map[string]any{
+		"raw_text": "demo.test|id|Tier Two|https://tier2.test/|demo|100|true|note|2",
+		"options": map[string]any{
+			"delimiter":  "|",
+			"has_header": false,
+			"mapping":    map[string]int{"domain": 1, "lang": 2, "anchor_text": 3, "target_url": 4, "category": 5, "weight": 6, "enabled": 7, "remark": 8, "recommend_tier": 9},
+		},
+	}, 200)
+	normalized := result["data"].(map[string]any)["normalized_text"].(string)
+	if !strings.HasSuffix(normalized, "|2") {
+		t.Fatalf("preprocess lost recommend_tier: %q", normalized)
 	}
 }
 

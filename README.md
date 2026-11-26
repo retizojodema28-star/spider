@@ -4,7 +4,7 @@
 
 公开页面、后台和 Worker 使用同一套 Go 代码。公开请求读取启动或刷新后发布到内存的只读快照，后台写入 MySQL 后通过 revision 刷新快照；不依赖 Redis，也不需要 PV/UV 统计服务。
 
-可选推荐内容通过运维配置的固定 `RECOMMEND_FEED_URL` 接入；详情页和 `/link/` 带 `recommend=1` 时，在第二层外链后显示经过安全过滤的“推荐网站”区块。外链使用 `recommend_tier=0/1` 稳定分为两组，不改变 PHP 的详情页 12 条及 Hub 80–120 条加底部 6 条口径。
+推荐内容固定从代码内置的 `https://idsite.vip/feed.php` 读取，详情页和 `/link/` 只有带 `feed=1` 时才显示经过安全过滤的“推荐网站”区块。外链参数 `recommend` 只负责筛选：缺省或 `0` 使用 `recommend_tier` 全量池，正整数 `N` 只使用 `recommend_tier=N`；不改变 PHP 的详情页 12 条及 Hub 80–120 条加底部 6 条口径。
 
 ## 本地启动
 

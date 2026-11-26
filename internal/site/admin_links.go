@@ -116,8 +116,8 @@ func (a *adminServer) normalizeLink(b adminLinkInput, collection string) (SiteLi
 	if b.RecommendTier != nil {
 		tier = *b.RecommendTier
 	}
-	if tier < 0 || tier > 1 {
-		return fail("recommend_tier must be 0 or 1")
+	if tier < 0 {
+		return fail("recommend_tier must be a non-negative integer")
 	}
 	if collection == "internal-domain" {
 		if domain == "" || domain == "global" {
@@ -494,7 +494,7 @@ func normalizedAdminFieldsValid(fields []string) bool {
 	}
 	if len(fields) == 9 && fields[8] != "" {
 		tier, err := strconv.Atoi(fields[8])
-		if err != nil || tier < 0 || tier > 1 {
+		if err != nil || tier < 0 {
 			return false
 		}
 	}

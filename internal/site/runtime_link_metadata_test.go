@@ -15,6 +15,34 @@ func TestRuntimePHPIDMigrationAndIndependentPayload(t *testing.T) {
 	verifyRuntimePHPIDMigration(t, h)
 }
 
+func TestRuntimeHubBackfillsLegacySnapshotRecommendTier(t *testing.T) {
+	h := newAdminHarness(t, nil)
+	link := SiteLink{SiteKey: "default", Kind: "external", Language: "id", Domain: "tier-two.test", AnchorText: "Tier Two", TargetURL: "https://tier-two.test/", RecommendTier: 2, Weight: 100, Enabled: true}
+	if err := h.db.Create(&link).Error; err != nil {
+		t.Fatal(err)
+	}
+	payload := `{"domain":"tier-two.test","lang":"id","anchor_text":"Tier Two","target_url":"https://tier-two.test/","category":"","weight":100,"enabled":true,"remark":""}`
+	if err := h.db.Create(&RuntimeExternalRecord{ID: 1, LinkID: link.ID, FirstSeenDate: "2026-11-26", Payload: payload}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := h.db.Create(&RuntimeExternalDate{Date: "2026-11-26", MaxID: 1}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := h.db.Model(&RuntimeHubState{}).Where("id = ?", 1).Updates(map[string]any{"active_date": "2026-11-26", "next_external_id": 1}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := h.rt.Reload(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	hub := h.rt.Snapshot().Hub
+	if got := hub.ExternalRecords[1].RecommendTier; got != 2 {
+		t.Fatalf("legacy snapshot tier = %d, want 2", got)
+	}
+	if got := hub.TierCounts["2026-11-26"][2]; got != 1 {
+		t.Fatalf("tier count = %d, want 1", got)
+	}
+}
+
 // Also called by TestAdminOptionalMySQL against its isolated prefixed tables.
 func verifyRuntimePHPIDMigration(t *testing.T, h *adminHarness) {
 	t.Helper()

@@ -17,6 +17,7 @@ import (
 )
 
 const (
+	RecommendationFeedURL        = "https://idsite.vip/feed.php"
 	recommendationFeedCacheTTL   = 5 * time.Minute
 	recommendationFeedTimeout    = 4 * time.Second
 	recommendationFeedMaxBytes   = 512 << 10
@@ -28,9 +29,9 @@ type cachedRecommendation struct {
 	expiresAt time.Time
 }
 
-// RecommendationFeed pulls the optional "recommended sites" fragment from one
-// operator-configured endpoint. Request URLs are never accepted from callers,
-// which prevents this feature from becoming a general-purpose SSRF proxy.
+// RecommendationFeed pulls the "recommended sites" fragment from the fixed
+// application endpoint. Request URLs are never accepted from callers, which
+// prevents this feature from becoming a general-purpose SSRF proxy.
 type RecommendationFeed struct {
 	baseURL *url.URL
 	client  *http.Client
@@ -65,8 +66,8 @@ func NewRecommendationFeed(rawURL string, client *http.Client) (*RecommendationF
 		if len(via) >= 4 {
 			return errors.New("too many recommendation feed redirects")
 		}
-		if !strings.EqualFold(req.URL.Hostname(), base.Hostname()) {
-			return errors.New("recommendation feed redirected to a different host")
+		if !strings.EqualFold(req.URL.Scheme, base.Scheme) || !strings.EqualFold(req.URL.Host, base.Host) {
+			return errors.New("recommendation feed redirected outside the configured origin")
 		}
 		if previousCheck != nil {
 			return previousCheck(req, via)
@@ -265,7 +266,7 @@ func safeRecommendationHref(raw string) bool {
 	return strings.HasPrefix(raw, "/")
 }
 
-func recommendationEnabled(r *http.Request) bool {
+func recommendationFeedEnabled(r *http.Request) bool {
 	if r == nil {
 		return false
 	}
@@ -273,7 +274,7 @@ func recommendationEnabled(r *http.Request) bool {
 	if raw == "" {
 		raw = r.URL.RequestURI()
 	}
-	value := strings.ToLower(strings.TrimSpace(legacyQuery(raw)["recommend"]))
+	value := strings.ToLower(strings.TrimSpace(legacyQuery(raw)["feed"]))
 	return value == "1" || value == "true" || value == "yes" || value == "on"
 }
 

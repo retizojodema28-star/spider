@@ -41,11 +41,12 @@ func runtimePHPLinkJSON(l SiteLink, source string, phpID uint) string {
 			Weight   int    `json:"weight"`
 			Enabled  bool   `json:"enabled"`
 			Remark   string `json:"remark"`
+			Tier     int    `json:"recommend_tier"`
 			URLAlias string `json:"url"`
 			Label    string `json:"label"`
 			Source   string `json:"source_file"`
 			ID       uint   `json:"id"`
-		}{l.Domain, l.Language, l.AnchorText, l.TargetURL, l.Category, l.Weight, l.Enabled, l.Remark, l.TargetURL, l.AnchorText, source, phpID})
+		}{l.Domain, l.Language, l.AnchorText, l.TargetURL, l.Category, l.Weight, l.Enabled, l.Remark, l.RecommendTier, l.TargetURL, l.AnchorText, source, phpID})
 	}
 	return strings.TrimSuffix(b.String(), "\n")
 }

@@ -71,7 +71,7 @@ func loadRuntimeHub(tx *gorm.DB, links []SiteLink) (HubSnapshot, error) {
 		}
 	}
 	cfg := DecodeHubConfig([]byte(state.ConfigJSON))
-	hub := HubSnapshot{Config: &cfg, ActiveDate: state.ActiveDate, MissingDateStrategy: state.MissingDateStrategy, Subdomains: map[string][]string{}, SnapshotMaxIDs: map[string]int{}, ExternalRecords: map[int]HubExternalRecord{}}
+	hub := HubSnapshot{Config: &cfg, ActiveDate: state.ActiveDate, MissingDateStrategy: state.MissingDateStrategy, Subdomains: map[string][]string{}, SnapshotMaxIDs: map[string]int{}, ExternalRecords: map[int]HubExternalRecord{}, TierCounts: map[string]map[int]int{}}
 	for _, d := range domains {
 		var prefixes []string
 		if err := json.Unmarshal([]byte(d.Prefixes), &prefixes); err != nil {
@@ -94,6 +94,16 @@ func loadRuntimeHub(tx *gorm.DB, links []SiteLink) (HubSnapshot, error) {
 			}
 			row.ID = int(rec.ID)
 			row.RecommendTier = rec.RecommendTier
+			if payloadTier, ok := payloadRecommendTier(rec.Payload); ok && rec.RecommendTier == 0 {
+				row.RecommendTier = payloadTier
+			} else if rec.RecommendTier == 0 {
+				// Snapshots created before recommend_tier existed have no payload
+				// field. Backfill their tier from the owning link at load time.
+				if l, ok := byID[rec.LinkID]; ok {
+					row.RecommendTier = l.RecommendTier
+				}
+			}
+			row.RecommendTier = normalizedRecommendTier(row.RecommendTier)
 			hub.ExternalRecords[int(rec.ID)] = row
 			continue
 		}
@@ -105,9 +115,8 @@ func loadRuntimeHub(tx *gorm.DB, links []SiteLink) (HubSnapshot, error) {
 		}
 		hub.ExternalRecords[int(rec.ID)] = HubExternalRecord{ID: int(rec.ID), Domain: l.Domain, AnchorText: l.AnchorText, TargetURL: l.TargetURL, RecommendTier: l.RecommendTier, Weight: l.Weight, Enabled: l.Enabled}
 	}
-	hub.TierCounts = map[string][2]int{}
 	for date, maxID := range hub.SnapshotMaxIDs {
-		var counts [2]int
+		counts := map[int]int{}
 		for id, record := range hub.ExternalRecords {
 			if id <= maxID && record.Enabled && hubHTTP.MatchString(record.TargetURL) {
 				counts[normalizedRecommendTier(record.RecommendTier)]++
@@ -116,6 +125,16 @@ func loadRuntimeHub(tx *gorm.DB, links []SiteLink) (HubSnapshot, error) {
 		hub.TierCounts[date] = counts
 	}
 	return hub, nil
+}
+
+func payloadRecommendTier(payload string) (int, bool) {
+	var value struct {
+		RecommendTier *int `json:"recommend_tier"`
+	}
+	if json.Unmarshal([]byte(payload), &value) != nil || value.RecommendTier == nil {
+		return 0, false
+	}
+	return *value.RecommendTier, true
 }
 
 func appendRuntimeExternal(tx *gorm.DB, links []SiteLink, date, source string) error {

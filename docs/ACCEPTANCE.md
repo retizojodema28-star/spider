@@ -13,9 +13,10 @@
 - 详情页展示本地图片、应用资料、关键词和“相关链接”页签。
 - 相关链接以按钮形式展示，点击后跳转到保存的外部 URL。
 - 页面内部链接使用相对路径，部署到非默认端口时不会固定跳转到 `80` 或旧端口。
-- `/link/` 与 `/link/YYYYMMDD/数字/` 返回独立的外链聚合页，并按运行快照生成日期导航、分层外链、正文和 SEO 结构化数据；页面不展示独立合作伙伴链接侧栏或“选定的外部资源”区块。
-- 外链 `recommend_tier=0` 与 `recommend_tier=1` 分别稳定进入两个外链区块；`recommend=1` 的第二区块继续显示 Recommend Feed。
-- `/link/?recommend=1` 与详情页使用同一固定 Feed、同样的 HTML 白名单、超时、大小限制和缓存。
+- `/link/` 与 `/link/YYYYMMDD/数字/` 返回独立的外链聚合页，并按运行快照生成日期导航、按 `recommend_tier` 筛选的外链、正文和 SEO 结构化数据；页面不展示独立合作伙伴链接侧栏或“选定的外部资源”区块。
+- 外链缺省或 `recommend=0` 时使用 `recommend_tier` 全量池；`recommend=N` 只返回 `recommend_tier=N` 的记录，例如 `recommend=1`、`recommend=2`。
+- 详情页和 `/link/` 只有带 `feed=1` 时才显示固定 `https://idsite.vip/feed.php` 返回的推荐区块；`recommend` 不再控制 Feed。
+- 两个入口使用同一 Feed HTML 白名单、超时、大小限制和缓存。
 - 详情页页脚保留固定 `LK` 入口并指向 `/link/`。
 - 普通浏览器和 Googlebot User-Agent 经过相同的页面处理链。
 - 后台界面为中文，登录、退出、站点设置、应用、图片、语言和链接管理可用。

@@ -172,6 +172,14 @@ func (a *adminServer) preprocess(c *gin.Context) {
 			}
 			in.Enabled = &v
 		}
+		if raw := value("recommend_tier"); raw != "" {
+			v, e := strconv.Atoi(raw)
+			if e != nil || v < 0 {
+				fail(fmt.Errorf("invalid recommend_tier"))
+				continue
+			}
+			in.RecommendTier = &v
+		}
 		link, _, err := a.normalizeLink(in, "external")
 		if err != nil {
 			fail(err)
@@ -180,7 +188,7 @@ func (a *adminServer) preprocess(c *gin.Context) {
 		var out strings.Builder
 		writer := csv.NewWriter(&out)
 		writer.Comma = '|'
-		_ = writer.Write([]string{link.Domain, link.Language, link.AnchorText, link.TargetURL, link.Category, strconv.Itoa(link.Weight), strconv.FormatBool(link.Enabled), link.Remark})
+		_ = writer.Write([]string{link.Domain, link.Language, link.AnchorText, link.TargetURL, link.Category, strconv.Itoa(link.Weight), strconv.FormatBool(link.Enabled), link.Remark, strconv.Itoa(link.RecommendTier)})
 		writer.Flush()
 		normalized = append(normalized, strings.TrimSuffix(out.String(), "\n"))
 		if len(preview) < 20 {

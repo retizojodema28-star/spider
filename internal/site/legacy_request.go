@@ -351,7 +351,11 @@ func legacyHashURI(raw, prefix string) string {
 	}
 	if prefix == "" {
 		if i := strings.IndexByte(raw, '?'); i >= 0 {
-			return raw[:i+1] + legacyWithoutQueryKey(raw[i+1:], "recommend")
+			query := legacyWithoutQueryKeys(raw[i+1:], "recommend", "feed")
+			if query == "" {
+				return raw[:i]
+			}
+			return raw[:i+1] + query
 		}
 		return raw
 	}
@@ -364,7 +368,7 @@ func legacyHashURI(raw, prefix string) string {
 		m := legacyPathQuery.FindStringSubmatch(s)
 		return m[1] + "path=" + legacyRawEncode(RemoveLegacyPrefix(legacyUnescape(m[2], false), prefix))
 	})
-	p.query = legacyWithoutQueryKey(p.query, "recommend")
+	p.query = legacyWithoutQueryKeys(p.query, "recommend", "feed")
 	// DynamicPageService reconstructs components explicitly, including omitting
 	// the leading // for a protocol-relative authority. Match that hash contract.
 	var b strings.Builder
@@ -392,20 +396,50 @@ func legacyHashURI(raw, prefix string) string {
 	return b.String()
 }
 
-func legacyWithoutQueryKey(raw, key string) string {
+func legacyWithoutQueryKeys(raw string, keys ...string) string {
 	if raw == "" {
 		return raw
+	}
+	remove := make(map[string]bool, len(keys))
+	for _, key := range keys {
+		remove[legacyLower(key)] = true
 	}
 	parts := strings.Split(raw, "&")
 	kept := parts[:0]
 	for _, part := range parts {
 		rawKey, _, _ := strings.Cut(part, "=")
-		if strings.EqualFold(legacyUnescape(rawKey, true), key) {
+		if remove[legacyLower(legacyUnescape(rawKey, true))] {
 			continue
 		}
 		kept = append(kept, part)
 	}
 	return strings.Join(kept, "&")
+}
+
+// recommendTierFromRequest implements the public filter contract: an absent
+// or zero recommend value selects the complete external-link pool; a positive
+// value selects rows whose recommend_tier equals that value.
+func recommendTierFromRequest(r *http.Request) (tier int, filtered bool) {
+	if r == nil {
+		return 0, false
+	}
+	raw := r.RequestURI
+	if raw == "" {
+		raw = r.URL.RequestURI()
+	}
+	value := legacyTrim(legacyQuery(raw)["recommend"])
+	if value == "" {
+		return 0, false
+	}
+	n, err := strconv.Atoi(value)
+	if err != nil || n <= 0 {
+		return 0, false
+	}
+	return n, true
+}
+
+func recommendTierMatches(tier, filterTier int, filtered bool) bool {
+	return !filtered || normalizedRecommendTier(tier) == filterTier
 }
 
 func legacyQuery(raw string) map[string]string {
@@ -527,6 +561,7 @@ func legacyRequest(r *http.Request, cfg SiteConfig, s LegacySnapshot) LegacyPage
 	}
 	p.RequestedLanguage = lang
 	p.Language = s.LanguageBank.legacyEffectiveLanguage(lang, s.FallbackLanguage, cfg.DefaultLanguage)
+	p.RecommendTierFilter, p.RecommendFiltered = recommendTierFromRequest(r)
 	p.Hash = sha1Hex(p.Scheme + "|" + p.Host + "|" + p.Language + "|" + p.EntryHost + "|" + p.HashURI)
 	p.PageType = legacyPageTypeNormalized(p.Host, p.ContentPath)
 	trigger := s.HubTrigger

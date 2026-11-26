@@ -227,7 +227,7 @@ func NewRouterWithRuntime(runtime *Runtime, opts RouterOptions) *gin.Engine {
 		snapshot.ShowExternalPanel = cfg.ShowExternalPanel
 		hubPage, hubErr := BuildHubPage(c.Request, cfg, snapshot, s.Hub)
 		if hubErr == nil {
-			if recommendationEnabled(c.Request) && opts.RecommendationFeed != nil {
+			if recommendationFeedEnabled(c.Request) && opts.RecommendationFeed != nil {
 				fragment, feedErr := opts.RecommendationFeed.Fetch(c.Request.Context(), hubPage.Domain, recommendationRequestPath(c.Request))
 				if feedErr != nil {
 					log.Printf("hub recommendation feed skipped: %v", feedErr)
@@ -251,7 +251,7 @@ func NewRouterWithRuntime(runtime *Runtime, opts RouterOptions) *gin.Engine {
 			c.Status(500)
 			return
 		}
-		if recommendationEnabled(c.Request) && opts.RecommendationFeed != nil {
+		if recommendationFeedEnabled(c.Request) && opts.RecommendationFeed != nil {
 			fragment, feedErr := opts.RecommendationFeed.Fetch(c.Request.Context(), page.Host, recommendationRequestPath(c.Request))
 			if feedErr != nil {
 				log.Printf("recommendation feed skipped: %v", feedErr)

@@ -52,7 +52,7 @@ type HubPage struct {
 	PoolSize                                          int
 	Subdomains                                        []HubSubdomain
 	DateNavigation                                    []HubDateGroup
-	LeftLinks, RecommendedExternalLinks, BottomLinks  []HubLink
+	LeftLinks, BottomLinks                            []HubLink
 	ArticleBlocks, LeadArticles, RestArticles         []HubArticle
 	ResourceCards                                     []HubResource
 	FAQ                                               []LegacyFAQ
@@ -159,12 +159,13 @@ func BuildHubPage(r *http.Request, config SiteConfig, legacy LegacySnapshot, sna
 		date = d
 	}
 	images := hubLocalImages(req, config, legacy, brand, hash)
-	page := buildHubPage(req.Scheme, req.Host, req.NormalizedPath, lang, hash, brand, date, now, cfg, legacy, snapshot, images)
+	recommendTier, recommendFiltered := recommendTierFromRequest(r)
+	page := buildHubPage(req.Scheme, req.Host, req.NormalizedPath, lang, hash, brand, date, now, cfg, legacy, snapshot, images, recommendTier, recommendFiltered)
 	page.RequestHost = r.Host
 	return page, nil
 }
 
-func buildHubPage(scheme, domain, path, lang, hash, brand, date string, now time.Time, cfg HubConfig, legacy LegacySnapshot, snapshot HubSnapshot, images HubImages) HubPage {
+func buildHubPage(scheme, domain, path, lang, hash, brand, date string, now time.Time, cfg HubConfig, legacy LegacySnapshot, snapshot HubSnapshot, images HubImages, recommendTier int, recommendFiltered bool) HubPage {
 	if normalized := NormalizeHubDomain(domain); normalized != "" {
 		domain = normalized
 	}
@@ -193,14 +194,14 @@ func buildHubPage(scheme, domain, path, lang, hash, brand, date string, now time
 		p.Alternates = append(p.Alternates, HubAlternate{language, hubPageURL(scheme, domain, path, target)})
 	}
 	today := now.Format("2006-01-02")
-	p.LeftLinks, p.RecommendedExternalLinks, p.BottomLinks, p.SnapshotDate, p.PoolSize = hubSelectLinks(hash, date, today, cfg, legacy, snapshot)
+	p.LeftLinks, p.BottomLinks, p.SnapshotDate, p.PoolSize = hubSelectLinks(hash, date, today, cfg, legacy, snapshot, recommendTier, recommendFiltered)
 	p.Subdomains = HubSubdomainNavigation(domain, cfg.SubdomainCount, hash, snapshot.Subdomains[NormalizeHubDomain(domain)])
 	p.NavigationDate = NormalizeHubDate(date)
 	if p.NavigationDate == "" {
 		p.NavigationDate = today
 	}
 	p.DateNavigation = HubDateNavigation(scheme, domain, lang, p.NavigationDate, cfg.DateNavNumMax, hash)
-	all := append(append(append([]HubLink{}, p.LeftLinks...), p.RecommendedExternalLinks...), p.BottomLinks...)
+	all := append(append([]HubLink{}, p.LeftLinks...), p.BottomLinks...)
 	replace := strings.NewReplacer("{brand}", brand, "{year}", now.Format("2006"), "{count}", fmt.Sprint(len(all)+len(p.Subdomains)))
 	if len(copy.Intro) > 0 {
 		p.IntroText = replace.Replace(copy.Intro[int(hubHex(hash, 24, 8)%uint64(len(copy.Intro)))])

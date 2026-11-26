@@ -164,35 +164,37 @@ type LegacyImages struct {
 }
 
 type LegacyPage struct {
-	StatusCode                                                                                                      int
-	Config                                                                                                          SiteConfig
-	Host, EntryHost, RequestHost, Scheme, RequestURI, HashURI                                                       string
-	NormalizedPath, ContentPath, DisplayPath, RoutePrefix                                                           string
-	RequestedLanguage, Language, PageType, Hash, ContentHash                                                        string
-	HomeFallback, HubRoute, Preview                                                                                 bool
-	Title, Brand, Description                                                                                       string
-	Keywords, Paragraphs                                                                                            []string
-	FAQ                                                                                                             []LegacyFAQ
-	Canonical, RawCanonical, BaseURL, SEOBaseURL                                                                    string
-	HomeURL, SEOHomeURL, GameURL, CategoryURL, KeywordURL                                                           string
-	Navigation, RelatedLinks, ListLinks, SubdomainLinks, ExternalLinks, RecommendedExternalLinks, MainExternalLinks []LegacyLink
-	KeywordChips                                                                                                    []string
-	SocialLinks, LegalLinks                                                                                         []LegacyLink
-	FooterGroups                                                                                                    []LegacyLinkGroup
-	ShowListPanel, ShowSubdomainPanel, ShowExternalPanel                                                            bool
-	Labels                                                                                                          map[string]string
-	Images                                                                                                          LegacyImages
-	Version, FileSize, PackageName, SHA256                                                                          string
-	OldVersions                                                                                                     []LegacyVersion
-	Info                                                                                                            []LegacyField
-	UpdatedDate, UpdatedISO, Year                                                                                   string
-	RatingValue                                                                                                     float64
-	RatingText                                                                                                      string
-	RatingCount                                                                                                     int
-	DisplayTitle, SEOKeywords, OGLocale, Robots                                                                     string
-	JSONLD                                                                                                          []template.JS
-	RecommendedHeading                                                                                              string
-	RecommendedHTML                                                                                                 template.HTML
+	StatusCode                                                                            int
+	Config                                                                                SiteConfig
+	Host, EntryHost, RequestHost, Scheme, RequestURI, HashURI                             string
+	NormalizedPath, ContentPath, DisplayPath, RoutePrefix                                 string
+	RequestedLanguage, Language, PageType, Hash, ContentHash                              string
+	RecommendTierFilter                                                                   int
+	RecommendFiltered                                                                     bool
+	HomeFallback, HubRoute, Preview                                                       bool
+	Title, Brand, Description                                                             string
+	Keywords, Paragraphs                                                                  []string
+	FAQ                                                                                   []LegacyFAQ
+	Canonical, RawCanonical, BaseURL, SEOBaseURL                                          string
+	HomeURL, SEOHomeURL, GameURL, CategoryURL, KeywordURL                                 string
+	Navigation, RelatedLinks, ListLinks, SubdomainLinks, ExternalLinks, MainExternalLinks []LegacyLink
+	KeywordChips                                                                          []string
+	SocialLinks, LegalLinks                                                               []LegacyLink
+	FooterGroups                                                                          []LegacyLinkGroup
+	ShowListPanel, ShowSubdomainPanel, ShowExternalPanel                                  bool
+	Labels                                                                                map[string]string
+	Images                                                                                LegacyImages
+	Version, FileSize, PackageName, SHA256                                                string
+	OldVersions                                                                           []LegacyVersion
+	Info                                                                                  []LegacyField
+	UpdatedDate, UpdatedISO, Year                                                         string
+	RatingValue                                                                           float64
+	RatingText                                                                            string
+	RatingCount                                                                           int
+	DisplayTitle, SEOKeywords, OGLocale, Robots                                           string
+	JSONLD                                                                                []template.JS
+	RecommendedHeading                                                                    string
+	RecommendedHTML                                                                       template.HTML
 }
 
 // BuildLegacyPage ports the default ApkDetailRenderer/SeoRenderer pipeline.
