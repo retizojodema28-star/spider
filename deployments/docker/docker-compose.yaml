@@ -24,6 +24,7 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD}
       ADMIN_ORIGIN: ${ADMIN_ORIGIN:-}
       SEED_FILE: /app/data/seed/apps.json
+      RECOMMEND_FEED_URL: ${RECOMMEND_FEED_URL:-}
     volumes:
       - ../../data/lan:/app/data/lan:ro
       - ../../assets:/app/assets:ro

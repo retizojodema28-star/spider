@@ -77,7 +77,14 @@ func run() error {
 	if env("GIN_MODE", "release") == "release" {
 		gin.SetMode(gin.ReleaseMode)
 	}
-	router := site.NewRouterWithRuntime(runtime, site.RouterOptions{AssetRoot: env("ASSET_DIR", "assets"), Admin: &adminOptions})
+	var recommendationFeed *site.RecommendationFeed
+	if rawFeedURL := strings.TrimSpace(os.Getenv("RECOMMEND_FEED_URL")); rawFeedURL != "" {
+		recommendationFeed, err = site.NewRecommendationFeed(rawFeedURL, nil)
+		if err != nil {
+			return fmt.Errorf("configure recommendation feed: %w", err)
+		}
+	}
+	router := site.NewRouterWithRuntime(runtime, site.RouterOptions{AssetRoot: env("ASSET_DIR", "assets"), Admin: &adminOptions, RecommendationFeed: recommendationFeed})
 	server := &http.Server{
 		Addr: ":" + env("PORT", "8080"), Handler: router,
 		ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second,

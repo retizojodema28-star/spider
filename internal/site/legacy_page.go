@@ -190,6 +190,8 @@ type LegacyPage struct {
 	RatingCount                                                                           int
 	DisplayTitle, SEOKeywords, OGLocale, Robots                                           string
 	JSONLD                                                                                []template.JS
+	RecommendedHeading                                                                    string
+	RecommendedHTML                                                                       template.HTML
 }
 
 // BuildLegacyPage ports the default ApkDetailRenderer/SeoRenderer pipeline.

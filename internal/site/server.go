@@ -82,8 +82,9 @@ func (p DetailPage) Href(raw string) template.HTMLAttr {
 func (DetailPage) AbsoluteHref(raw string) template.HTMLAttr { return legacyHref(raw) }
 
 type RouterOptions struct {
-	AssetRoot string
-	Admin     *AdminOptions
+	AssetRoot          string
+	Admin              *AdminOptions
+	RecommendationFeed *RecommendationFeed
 }
 
 // Compatibility constructors for embedding/tests; production explicitly starts
@@ -230,6 +231,15 @@ func NewRouterWithRuntime(runtime *Runtime, opts RouterOptions) *gin.Engine {
 			log.Printf("build public page: %v", err)
 			c.Status(500)
 			return
+		}
+		if recommendationEnabled(c.Request) && opts.RecommendationFeed != nil {
+			fragment, feedErr := opts.RecommendationFeed.Fetch(c.Request.Context(), page.Host, recommendationRequestPath(c.Request))
+			if feedErr != nil {
+				log.Printf("recommendation feed skipped: %v", feedErr)
+			} else if fragment != "" {
+				page.RecommendedHeading = recommendationHeading(page.Language)
+				page.RecommendedHTML = fragment
+			}
 		}
 		c.Header("X-Runtime-Revision", strconv.FormatUint(s.Revision, 10))
 		renderer.render(c, "legacy.html", page)
