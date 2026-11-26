@@ -3,6 +3,7 @@ package site
 import (
 	"context"
 	"html/template"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -84,7 +85,7 @@ func TestPublicSnapshotConfigReloadAndReservedRoutes(t *testing.T) {
 	if w.Code != 200 || !strings.Contains(w.Body.String(), `href="/testcategory/game/"`) {
 		t.Fatal("updated route prefix not reflected in public navigation")
 	}
-	for _, path := range []string{"/admin/api/stats/summary", "/assets/missing.png", "/.env", "/.git/config", "/__preview/missing"} {
+	for _, path := range []string{"/robots.txt", "/sitemap.xml", "/admin/api/stats/summary", "/assets/missing.png", "/.env", "/.git/config", "/__preview/missing"} {
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, httptest.NewRequest("GET", path, nil))
 		if w.Code != 404 {
@@ -95,6 +96,13 @@ func TestPublicSnapshotConfigReloadAndReservedRoutes(t *testing.T) {
 	router.ServeHTTP(w, httptest.NewRequest("GET", "/__preview/apps/sample-app-one", nil))
 	if w.Code != 200 || !strings.Contains(w.Header().Get("X-Robots-Tag"), "noindex") {
 		t.Fatal("sample preview must be noindex")
+	}
+	for _, path := range []string{"/robots.txt", "/sitemap.xml"} {
+		w = httptest.NewRecorder()
+		router.ServeHTTP(w, httptest.NewRequest("HEAD", path, nil))
+		if w.Code != http.StatusNotFound || w.Body.Len() != 0 {
+			t.Fatalf("HEAD %s = %d body=%d", path, w.Code, w.Body.Len())
+		}
 	}
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, httptest.NewRequest("HEAD", "/anything?lan=id", nil))

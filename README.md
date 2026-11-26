@@ -21,6 +21,7 @@ docker compose -f deployments/docker/docker-compose.yaml ps
 - 公开页面：`http://127.0.0.1:18082/`
 - 后台：`http://127.0.0.1:18082/admin/`
 - 健康检查：`http://127.0.0.1:18082/healthz`
+- `robots.txt`、`sitemap.xml`：明确返回 404
 
 管理员凭据只从本机的 `deployments/docker/.env` 读取，不写入源码、文档或日志。外部转发工具及其配置在工程目录之外单独维护，工程不包含服务端地址、认证信息或转发配置。
 
@@ -45,5 +46,5 @@ go mod tidy -diff
 - `assets`：本地 CSS、图标和截图资源。
 - `data/seed`：中性样例应用和链接数据。
 - `data/lan/id`：印尼语词库和句子库。
-- `deployments/docker`：Go 应用的 Compose 部署文件；外部转发配置不放在这里。
+- `deployments/docker`：Go 应用、Nginx 入口和 Compose 部署文件；外部转发配置不放在这里。
 

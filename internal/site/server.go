@@ -130,6 +130,13 @@ func NewRouterWithRuntime(runtime *Runtime, opts RouterOptions) *gin.Engine {
 		c.JSON(200, gin.H{"ok": true, "revision": runtime.Snapshot().Revision})
 	}
 	router.GET("/healthz", health)
+	missingSpecialFile := func(c *gin.Context) {
+		c.Data(http.StatusNotFound, "text/plain; charset=utf-8", nil)
+	}
+	for _, specialPath := range []string{"/robots.txt", "/sitemap.xml"} {
+		router.GET(specialPath, missingSpecialFile)
+		router.HEAD(specialPath, missingSpecialFile)
+	}
 	if opts.AssetRoot != "" {
 		router.Static("/assets", opts.AssetRoot)
 	}

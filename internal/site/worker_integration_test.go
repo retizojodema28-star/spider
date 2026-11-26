@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -552,7 +553,7 @@ func TestWorkerReviewPublicRoutesNeverQueryDatabaseAfterPublication(t *testing.T
 			t.Fatal(err)
 		}
 	}
-	paths := []string{"/", "/apps", "/apps/unknown?lan=id", "/category/game/", "/arbitrary/deep", "/robots.txt", "/sitemap.xml", "/__preview/", "/__preview/apps/sample-app-one"}
+	paths := []string{"/", "/apps", "/apps/unknown?lan=id", "/category/game/", "/arbitrary/deep", "/__preview/", "/__preview/apps/sample-app-one"}
 	fetch := func(path, method, ua string) *httptest.ResponseRecorder {
 		r := httptest.NewRequest(method, path, nil)
 		r.Host = "public.example.test"
@@ -560,6 +561,14 @@ func TestWorkerReviewPublicRoutesNeverQueryDatabaseAfterPublication(t *testing.T
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, r)
 		return w
+	}
+	for _, path := range []string{"/robots.txt", "/sitemap.xml"} {
+		for _, method := range []string{"GET", "HEAD"} {
+			w := fetch(path, method, "Googlebot")
+			if w.Code != http.StatusNotFound || w.Body.Len() != 0 {
+				t.Fatalf("%s %s = %d body=%d", method, path, w.Code, w.Body.Len())
+			}
+		}
 	}
 	baseline := map[string]string{}
 	for _, path := range paths {
