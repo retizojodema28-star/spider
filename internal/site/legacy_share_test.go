@@ -2,6 +2,7 @@ package site
 
 import (
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -30,6 +31,15 @@ func TestLegacyShareURLKeepsRequestPort(t *testing.T) {
 	}
 	if got, want := page.Canonical, "https://127.0.0.1/apps/falcon-squad"; got != want {
 		t.Fatalf("SEO canonical = %q, want %q", got, want)
+	}
+	if got, want := page.CanonicalHref, "/apps/falcon-squad"; got != want {
+		t.Fatalf("canonical link = %q, want %q", got, want)
+	}
+	if page.Description == page.Paragraphs[0] {
+		t.Fatal("description must not reuse the first random corpus sentence")
+	}
+	if strings.Contains(strings.ToLower(page.Description), "contoh lokal") || !strings.Contains(page.Description, page.Brand) {
+		t.Fatalf("description should be app-specific, got %q", page.Description)
 	}
 	if got, want := string(page.Href(page.DisplayPath)), `href="/apps/falcon-squad"`; got != want {
 		t.Fatalf("share href = %q, want %q", got, want)

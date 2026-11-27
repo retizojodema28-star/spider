@@ -101,6 +101,39 @@ func legacyParagraphs(sentences []string, title, brand string, words []string) [
 	}
 }
 
+func legacyDescription(p LegacyPage) string {
+	brand := strings.TrimSpace(p.Brand)
+	if brand == "" {
+		brand = "APK"
+	}
+	version := strings.TrimSpace(p.Version)
+	if version == "" {
+		version = "latest"
+	}
+	size := strings.TrimSpace(p.FileSize)
+	if size == "" {
+		size = "APK"
+	}
+
+	var text string
+	switch p.Language {
+	case "id":
+		text = fmt.Sprintf("Unduh %s %s APK untuk Android. Ukuran file %s, lengkap dengan versi terbaru dan tautan unduhan resmi.", brand, version, size)
+	case "th":
+		text = fmt.Sprintf("ดาวน์โหลด %s %s APK สำหรับ Android ขนาดไฟล์ %s พร้อมเวอร์ชันล่าสุดและลิงก์ดาวน์โหลดทางการ", brand, version, size)
+	case "vn":
+		text = fmt.Sprintf("Tải %s %s APK cho Android. Dung lượng tệp %s, kèm phiên bản mới nhất và liên kết tải chính thức.", brand, version, size)
+	default:
+		text = fmt.Sprintf("Download %s %s APK for Android. File size %s, with the latest version details and official download link.", brand, version, size)
+	}
+	runes := []rune(text)
+	if len(runes) > 160 {
+		text = string(runes[:157]) + "..."
+	}
+
+	return text
+}
+
 func legacyShuffle[T any](items []T, key func(T) string) []T {
 	out := append([]T(nil), items...)
 	sort.SliceStable(out, func(i, j int) bool { return key(out[i]) < key(out[j]) })

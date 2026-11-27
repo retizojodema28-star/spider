@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{{.Title}}</title><meta name="theme-color" content="#24cd77">
 {{range .JSONLD}}<script type="application/ld+json">{{.}}</script>{{end}}
-<link rel="canonical" {{.AbsoluteHref .Canonical}}>
+<link rel="canonical" {{.AbsoluteHref .CanonicalHref}}>
 {{if .Images.Primary}}<link rel="image_src" {{.Href .Images.Primary}}>{{end}}
 <meta name="robots" content="{{.Robots}}"><meta name="description" content="{{.Description}}">
 <meta property="og:locale" content="{{.OGLocale}}"><meta property="og:site_name" content="{{.DisplayTitle}}">

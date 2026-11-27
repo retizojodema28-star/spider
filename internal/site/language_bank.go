@@ -20,6 +20,11 @@ type languageData struct {
 	sentences []string
 }
 
+// maxLanguageSentences caps how many corpus lines are loaded per language.
+// The previous 20k cap silently truncated larger corpora; the recursive
+// generated pages need a larger pool while keeping memory bounded.
+const maxLanguageSentences = 200000
+
 func LoadLanguageBank(root string, languages ...string) (*LanguageBank, error) {
 	bank := &LanguageBank{languages: make(map[string]languageData, len(languages))}
 	for _, language := range languages {
@@ -74,11 +79,11 @@ func loadLanguageData(root string) (languageData, error) {
 				continue
 			}
 			rawSentences = append(rawSentences, line)
-			if len(rawSentences) >= 20000 {
+			if len(rawSentences) >= maxLanguageSentences {
 				break
 			}
 		}
-		if len(rawSentences) >= 20000 {
+		if len(rawSentences) >= maxLanguageSentences {
 			break
 		}
 	}

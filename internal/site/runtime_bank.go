@@ -101,11 +101,11 @@ func readRuntimeLanguage(ctx context.Context, root, lang string) (languageData, 
 			if len(line) >= 24 {
 				lines = append(lines, line)
 			}
-			if len(lines) >= 20000 {
+			if len(lines) >= maxLanguageSentences {
 				break
 			}
 		}
-		if len(lines) >= 20000 {
+		if len(lines) >= maxLanguageSentences {
 			break
 		}
 	}

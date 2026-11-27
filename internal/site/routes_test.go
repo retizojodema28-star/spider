@@ -41,7 +41,7 @@ func TestPublicRouterSlashForms(t *testing.T) {
 			req.Host = "preview.example.test:18443"
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
-			if w.Code != 200 || w.Header().Get("Location") != "" || !strings.Contains(w.Body.String(), `rel="canonical" href="https://preview.example.test`+path+`"`) {
+			if w.Code != 200 || w.Header().Get("Location") != "" || !strings.Contains(w.Body.String(), `rel="canonical" href="`+path+`"`) {
 				t.Errorf("GET %s: status=%d canonical or Location mismatch", uri, w.Code)
 			}
 		}

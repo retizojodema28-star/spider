@@ -44,25 +44,25 @@ type HubAlternate struct{ Language, URL string }
 func (a HubAlternate) Href() template.HTMLAttr { return legacyHref(a.URL) }
 
 type HubPage struct {
-	StatusCode                                        int
-	Config                                            HubConfig
-	Scheme, Domain, RequestHost, Path, Language, Hash string
-	Brand, Title, Description, IntroText, PageURL     string
-	RequestedDate, NavigationDate, SnapshotDate       string
-	PoolSize                                          int
-	Subdomains                                        []HubSubdomain
-	DateNavigation                                    []HubDateGroup
-	LeftLinks, BottomLinks                            []HubLink
-	ArticleBlocks, LeadArticles, RestArticles         []HubArticle
-	ResourceCards                                     []HubResource
-	FAQ                                               []LegacyFAQ
-	RelatedPages, Breadcrumbs                         []HubLink
-	Labels, Sections                                  map[string]string
-	Images                                            HubImages
-	Alternates                                        []HubAlternate
-	JSONLD                                            []template.JS
-	RecommendedHeading                                string
-	RecommendedHTML                                   template.HTML
+	StatusCode                                                   int
+	Config                                                       HubConfig
+	Scheme, Domain, RequestHost, Path, Language, Hash            string
+	Brand, Title, Description, IntroText, PageURL, CanonicalHref string
+	RequestedDate, NavigationDate, SnapshotDate                  string
+	PoolSize                                                     int
+	Subdomains                                                   []HubSubdomain
+	DateNavigation                                               []HubDateGroup
+	LeftLinks, BottomLinks                                       []HubLink
+	ArticleBlocks, LeadArticles, RestArticles                    []HubArticle
+	ResourceCards                                                []HubResource
+	FAQ                                                          []LegacyFAQ
+	RelatedPages, Breadcrumbs                                    []HubLink
+	Labels, Sections                                             map[string]string
+	Images                                                       HubImages
+	Alternates                                                   []HubAlternate
+	JSONLD                                                       []template.JS
+	RecommendedHeading                                           string
+	RecommendedHTML                                              template.HTML
 }
 
 func (p HubPage) Href(u string) template.HTMLAttr {
@@ -186,6 +186,9 @@ func buildHubPage(scheme, domain, path, lang, hash, brand, date string, now time
 		p.Sections[key] = strings.ReplaceAll(value, "{brand}", brand)
 	}
 	p.PageURL = hubPageURL(scheme, domain, path, lang)
+	// Relative canonical: a reverse proxy that serves this HTML from A.com
+	// resolves it to A's URL instead of pointing back to B.
+	p.CanonicalHref = hubPageHref(path, lang)
 	for _, language := range []string{"en", "th", "id", "vn", "x-default"} {
 		target := language
 		if target == "x-default" {

@@ -4,7 +4,7 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{{.Title}}</title><meta name="description" content="{{.Description}}">
 <meta name="robots" content="index,follow,max-image-preview:large">
-<link rel="canonical" {{.AbsoluteHref .PageURL}}>
+<link rel="canonical" {{.AbsoluteHref .CanonicalHref}}>
 {{range .Alternates}}<link rel="alternate" hreflang="{{.Language}}" {{.Href}}>{{end}}
 <meta property="og:type" content="website"><meta property="og:title" content="{{.Title}}">
 <meta property="og:description" content="{{.Description}}"><meta property="og:url" content="{{.PageURL}}">

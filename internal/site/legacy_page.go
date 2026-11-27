@@ -175,7 +175,7 @@ type LegacyPage struct {
 	Title, Brand, Description                                                             string
 	Keywords, Paragraphs                                                                  []string
 	FAQ                                                                                   []LegacyFAQ
-	Canonical, RawCanonical, BaseURL, SEOBaseURL                                          string
+	Canonical, CanonicalHref, RawCanonical, BaseURL, SEOBaseURL                           string
 	HomeURL, SEOHomeURL, GameURL, CategoryURL, KeywordURL                                 string
 	Navigation, RelatedLinks, ListLinks, SubdomainLinks, ExternalLinks, MainExternalLinks []LegacyLink
 	KeywordChips                                                                          []string
@@ -224,7 +224,6 @@ func BuildLegacyPage(r *http.Request, config SiteConfig, snapshot LegacySnapshot
 	p.Title = legacyTitle(p.Brand, p.Hash, p.Language, snapshot)
 	sentences := snapshot.LanguageBank.Sentences(p.Language, p.Hash, 8, 0)
 	p.Paragraphs = legacyParagraphs(sentences, p.Title, p.Brand, p.Keywords)
-	p.Description = p.Paragraphs[0]
 	p.FAQ = []LegacyFAQ{
 		{"Is this page stable?", "Yes. The normalized URL maps to a deterministic hash and produces stable content."},
 		{"Does every request read MySQL?", "No. Public rendering uses local snapshots and in-memory lan by default."},
@@ -235,15 +234,6 @@ func BuildLegacyPage(r *http.Request, config SiteConfig, snapshot LegacySnapshot
 	if len(sentences) > 5 {
 		p.FAQ[1].Answer = sentences[5]
 	}
-	content := struct {
-		Title       string      `json:"title"`
-		Description string      `json:"description"`
-		Brand       string      `json:"primary_keyword"`
-		Paragraphs  []string    `json:"paragraphs"`
-		FAQ         []LegacyFAQ `json:"faq"`
-	}{p.Title, p.Description, p.Brand, p.Paragraphs, p.FAQ}
-	digest := sha256.Sum256(legacyJSON(content))
-	p.ContentHash = hex.EncodeToString(digest[:])
 	p.Labels = legacyLabelsFor(p.Language).Detail
 	// Share text must reflect the origin that served this request, including a
 	// non-default preview port. p.Host is intentionally PHP-normalized for SEO
@@ -254,6 +244,10 @@ func BuildLegacyPage(r *http.Request, config SiteConfig, snapshot LegacySnapshot
 	}
 	p.RawCanonical = p.Scheme + "://" + shareHost + p.DisplayPath
 	p.Canonical = "https://" + p.Host + p.DisplayPath
+	// The canonical <link> is relative so a reverse proxy that serves this HTML
+	// from another public origin (for example A.com -> B) resolves it against
+	// A's URL instead of pointing search engines back to B.
+	p.CanonicalHref = p.DisplayPath
 	p.BaseURL = p.Scheme + "://" + p.Host
 	p.SEOBaseURL = "https://" + p.Host
 	p.HomeURL = p.internalURL("/", false)
@@ -264,6 +258,19 @@ func BuildLegacyPage(r *http.Request, config SiteConfig, snapshot LegacySnapshot
 	p.KeywordChips = phpKeywordChips(p.Keywords, p.Hash, p.Brand)
 	legacyBuildLinks(&p, snapshot)
 	legacyMetadata(&p, snapshot.Now)
+	// Build the description from app metadata instead of taking the first random
+	// corpus sentence. The content hash includes the description, so it must be
+	// computed after this assignment.
+	p.Description = legacyDescription(p)
+	content := struct {
+		Title       string      `json:"title"`
+		Description string      `json:"description"`
+		Brand       string      `json:"primary_keyword"`
+		Paragraphs  []string    `json:"paragraphs"`
+		FAQ         []LegacyFAQ `json:"faq"`
+	}{p.Title, p.Description, p.Brand, p.Paragraphs, p.FAQ}
+	digest := sha256.Sum256(legacyJSON(content))
+	p.ContentHash = hex.EncodeToString(digest[:])
 	p.Images = legacyLocalImages(p, config, snapshot)
 	legacyBuildSEO(&p)
 	return p, nil
